@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>playse</title>
+
+  <!-- Google Font: Oxygen Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Oxygen+Mono&display=swap" rel="stylesheet">
+
+  <!-- Custom logo font placeholder (self-host later) -->
+  <!--
+  <style>
+    @font-face {
+      font-family: 'PlayseLogo';
+      src: url('./fonts/playse-logo.woff2') format('woff2');
+      font-weight: normal;
+      font-style: normal;
+    }
+  </style>
+  -->
+
+  <style>
+    :root {
+      --bg: #000;
+      --fg: #fff;
+      --muted: rgba(255,255,255,0.6);
+      --border: rgba(255,255,255,0.9);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: 'Oxygen Mono', monospace;
+    }
+
+    .app {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .frame {
+      width: 100%;
+      max-width: 480px;
+      text-align: center;
+    }
+
+    /* LOGO */
+    .logo {
+      font-size: 28px;
+      letter-spacing: 0.02em;
+      margin-bottom: 40px;
+      /* font-family: 'PlayseLogo', 'Oxygen Mono', monospace; */
+    }
+
+    /* PLAY BUTTON */
+    .play-btn {
+      appearance: none;
+      background: none;
+      border: 2px solid var(--border);
+      color: var(--fg);
+      width: 120px;
+      height: 120px;
+      border-radius: 999px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .play-btn:active {
+      transform: scale(0.98);
+    }
+
+    /* TRACK INFO */
+    .track {
+      margin-top: 32px;
+      line-height: 1.6;
+    }
+
+    .track .title {
+      font-size: 14px;
+    }
+
+    .track .artist {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    /* ADD TO LIBRARY */
+    .actions {
+      margin-top: 28px;
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+    }
+
+    .actions a {
+      color: var(--fg);
+      text-decoration: none;
+      border-bottom: 1px solid var(--fg);
+      font-size: 12px;
+    }
+
+    /* STATES */
+    .hidden { display: none; }
+
+    /* LOADING */
+    .loading {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 24px;
+    }
+
+    @media (max-width: 480px) {
+      .logo { font-size: 24px; }
+      .play-btn { width: 96px; height: 96px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="frame">
+
+      <!-- STATE: LANDING -->
+      <div id="state-landing">
+        <div class="logo">playse</div>
+        <button class="play-btn" id="playBtn">Play</button>
+      </div>
+
+      <!-- STATE: LOADING -->
+      <div id="state-loading" class="hidden">
+        <div class="logo">playse</div>
+        <div class="loading">loading…</div>
+      </div>
+
+      <!-- STATE: PLAYER -->
+      <div id="state-player" class="hidden">
+        <div class="logo">playse</div>
+        <button class="play-btn" id="pauseBtn">Pause</button>
+
+        <div class="track">
+          <div class="title" id="trackTitle">—</div>
+          <div class="artist" id="trackArtist">—</div>
+        </div>
+
+        <div class="actions">
+          <a id="spotifyLink" href="#" target="_blank" rel="noopener">Spotify</a>
+          <a id="appleLink" href="#" target="_blank" rel="noopener">Apple Music</a>
+        </div>
+      </div>
+
+      <audio id="audio" preload="metadata"></audio>
+    </div>
+  </div>
+
+  <script>
+    const audio = document.getElementById('audio');
+
+    const landing = document.getElementById('state-landing');
+    const loading = document.getElementById('state-loading');
+    const player = document.getElementById('state-player');
+
+    const playBtn = document.getElementById('playBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
+
+    const trackTitle = document.getElementById('trackTitle');
+    const trackArtist = document.getElementById('trackArtist');
+    const spotifyLink = document.getElementById('spotifyLink');
+    const appleLink = document.getElementById('appleLink');
+
+    // TEMP: single audio source (Part 1)
+    audio.src = 'playse_1.mp3';
+
+    let started = false;
+
+    function show(el) {
+      landing.classList.add('hidden');
+      loading.classList.add('hidden');
+      player.classList.add('hidden');
+      el.classList.remove('hidden');
+    }
+
+    playBtn.addEventListener('click', async () => {
+      show(loading);
+
+      if (!started) {
+        await audio.play();
+        const duration = audio.duration;
+        audio.currentTime = Math.random() * duration;
+        started = true;
+      } else {
+        await audio.play();
+      }
+    });
+
+    pauseBtn.addEventListener('click', () => {
+      audio.pause();
+    });
+
+    audio.addEventListener('play', () => {
+      show(player);
+    });
+
+    audio.addEventListener('pause', () => {
+      // remain in player state, but button text already reflects pause
+    });
+
+    // Placeholder track data (will be replaced by CSV logic)
+    function updateTrack(title, artist, spotify, apple) {
+      trackTitle.textContent = title;
+      trackArtist.textContent = artist;
+      spotifyLink.href = spotify || '#';
+      appleLink.href = apple || '#';
+    }
+
+    updateTrack('Track title', 'Artist name', '#', '#');
+  </script>
+</body>
+</html>
