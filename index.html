@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -310,8 +310,23 @@
       return 0;
     }
 
-    function parseCSV(text) {
-      // Minimal CSV parser that supports quoted fields.
+    function detectDelimiter(text) {
+      // Look at the first non-empty line to guess delimiter.
+      const lines = String(text || '').split(/?/)
+      
+.filter(l => l.trim().length);
+      const head = lines[0] || '';
+      const comma = (head.match(/,/g) || []).length;
+      const semi = (head.match(/;/g) || []).length;
+      const tab = (head.match(/	/g) || []).length;
+      // Prefer the most frequent.
+      if (semi > comma && semi >= tab) return ';';
+      if (tab > comma && tab > semi) return '	';
+      return ',';
+    }
+
+    function parseDelimited(text, delimiter) {
+      // Minimal CSV/DSV parser that supports quoted fields.
       const rows = [];
       let row = [];
       let cell = '';
@@ -333,10 +348,11 @@
         } else {
           if (ch === '"') {
             inQuotes = true;
-          } else if (ch === ',') {
+          } else if (ch === delimiter) {
             row.push(cell);
             cell = '';
-          } else if (ch === '') {
+          } else if (ch === '') 
+          {
             row.push(cell);
             rows.push(row);
             row = [];
@@ -349,13 +365,17 @@
         }
       }
 
-      // last cell
       if (cell.length || row.length) {
         row.push(cell);
         rows.push(row);
       }
 
       return rows;
+    }
+
+    function parseCSV(text) {
+      const delimiter = detectDelimiter(text);
+      return parseDelimited(text, delimiter);
     }
 
     async function loadTracklistForSection(index) {
@@ -376,21 +396,28 @@
       const header = rows[0].map(h => String(h || '').trim().toLowerCase());
 
       const idxTime = header.findIndex(h => ['start_time','time','timestamp'].includes(h));
-      const idxTitle = header.findIndex(h => ['title','track title','track'].includes(h));
-      const idxArtist = header.findIndex(h => ['artist','artist name'].includes(h));
-      const idxSpotify = header.findIndex(h => ['spotify_url','spotify','spotify url'].includes(h));
-      const idxApple = header.findIndex(h => ['apple_music_url','apple','apple url','apple music','apple_music'].includes(h));
+      const idxTitle = header.findIndex(h => ['title','track title','track','song','song title'].includes(h));
+      const idxArtist = header.findIndex(h => ['artist','artist name','artist(s)','artists'].includes(h));
+      const idxSpotify = header.findIndex(h => ['spotify_url','spotify','spotify url','spotify link','spotify_uri'].includes(h));
+      const idxApple = header.findIndex(h => ['apple_music_url','apple','apple url','apple music','apple_music','apple link'].includes(h));
+
+      // Fallback to common column order if headers don't match.
+      const colTime = (idxTime >= 0) ? idxTime : 0;
+      const colTitle = (idxTitle >= 0) ? idxTitle : 1;
+      const colArtist = (idxArtist >= 0) ? idxArtist : 2;
+      const colSpotify = (idxSpotify >= 0) ? idxSpotify : 3;
+      const colApple = (idxApple >= 0) ? idxApple : 4;
 
       const tracks = [];
       for (let r = 1; r < rows.length; r++) {
         const cols = rows[r];
         if (!cols || !cols.length) continue;
 
-        const start = timeToSeconds(cols[idxTime] ?? cols[0]);
-        const title = String(cols[idxTitle] ?? '').trim();
-        const artist = String(cols[idxArtist] ?? '').trim();
-        const spotify_url = String(cols[idxSpotify] ?? '').trim();
-        const apple_music_url = String(cols[idxApple] ?? '').trim();
+        const start = timeToSeconds(cols[colTime] ?? cols[0]);
+        const title = String(cols[colTitle] ?? '').trim();
+        const artist = String(cols[colArtist] ?? '').trim();
+        const spotify_url = String(cols[colSpotify] ?? '').trim();
+        const apple_music_url = String(cols[colApple] ?? '').trim();
 
         // Ignore empty rows
         if (!title && !artist) continue;
