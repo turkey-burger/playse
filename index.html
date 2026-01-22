@@ -28,6 +28,8 @@
       --fg: #fff;
       --muted: rgba(255,255,255,0.6);
       --border: rgba(255,255,255,0.9);
+      --toast-bg: rgba(255,255,255,0.12);
+      --toast-border: rgba(255,255,255,0.25);
     }
 
     * { box-sizing: border-box; }
@@ -112,6 +114,12 @@
       font-size: 12px;
     }
 
+    .actions a.disabled {
+      opacity: 0.35;
+      border-bottom-color: transparent;
+      cursor: not-allowed;
+    }
+
     /* STATES */
     .hidden { display: none; }
 
@@ -120,6 +128,32 @@
       font-size: 12px;
       color: var(--muted);
       margin-top: 24px;
+    }
+
+    /* TOAST */
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 22px;
+      transform: translateX(-50%);
+      max-width: min(520px, calc(100vw - 24px));
+      padding: 12px 14px;
+      border: 1px solid var(--toast-border);
+      background: var(--toast-bg);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      color: var(--fg);
+      font-size: 12px;
+      line-height: 1.4;
+      border-radius: 999px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 160ms ease;
+      text-align: center;
+    }
+
+    .toast.show {
+      opacity: 1;
     }
 
     @media (max-width: 480px) {
@@ -147,7 +181,7 @@
       <!-- STATE: PLAYER -->
       <div id="state-player" class="hidden">
         <div class="logo">playse</div>
-        <button class="play-btn" id="pauseBtn">Pause</button>
+        <button class="play-btn" id="toggleBtn">Pause</button>
 
         <div class="track">
           <div class="title" id="trackTitle">—</div>
@@ -164,7 +198,25 @@
     </div>
   </div>
 
+  <div class="toast" id="toast" aria-live="polite" aria-atomic="true"></div>
+
   <script>
+    // ----------------------------
+    // CONFIG
+    // ----------------------------
+    // Add new sections by appending here. Keep audio + tracklist paired.
+    // Tracklist timestamps are relative to EACH file (start at 00:00:00).
+    const sections = [
+      { audio: 'playse_1.mp3', tracklist: 'playse_1_tracklist.csv' },
+      { audio: 'playse_2.mp3', tracklist: 'playse_2_tracklist.csv' },
+      { audio: 'playse_3.mp3', tracklist: 'playse_3_tracklist.csv' },
+    ];
+
+    const NOT_AVAILABLE_MSG = "Sorry, this song isn't available on the selected streaming service";
+
+    // ----------------------------
+    // DOM
+    // ----------------------------
     const audio = document.getElementById('audio');
 
     const landing = document.getElementById('state-landing');
@@ -172,18 +224,27 @@
     const player = document.getElementById('state-player');
 
     const playBtn = document.getElementById('playBtn');
-    const pauseBtn = document.getElementById('pauseBtn');
+    const toggleBtn = document.getElementById('toggleBtn');
 
     const trackTitle = document.getElementById('trackTitle');
     const trackArtist = document.getElementById('trackArtist');
     const spotifyLink = document.getElementById('spotifyLink');
     const appleLink = document.getElementById('appleLink');
 
-    // TEMP: single audio source (Part 1)
-    audio.src = 'playse_1.mp3';
+    const toast = document.getElementById('toast');
 
+    // ----------------------------
+    // STATE
+    // ----------------------------
     let started = false;
+    let currentSectionIndex = 0;
+    let tracklistsBySection = new Map(); // index -> array of tracks
+    let currentTrackIndex = -1;
+    let toastTimer = null;
 
+    // ----------------------------
+    // UI helpers
+    // ----------------------------
     function show(el) {
       landing.classList.add('hidden');
       loading.classList.add('hidden');
@@ -191,47 +252,328 @@
       el.classList.remove('hidden');
     }
 
-    playBtn.addEventListener('click', async () => {
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add('show');
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2400);
+    }
+
+    function setLink(el, url) {
+      const has = !!(url && String(url).trim());
+      if (has) {
+        el.href = url;
+        el.classList.remove('disabled');
+        el.setAttribute('aria-disabled', 'false');
+      } else {
+        el.href = '#';
+        el.classList.add('disabled');
+        el.setAttribute('aria-disabled', 'true');
+      }
+    }
+
+    function updateTrackUI(track) {
+      if (!track) {
+        trackTitle.textContent = '—';
+        trackArtist.textContent = '—';
+        setLink(spotifyLink, '');
+        setLink(appleLink, '');
+        return;
+      }
+
+      trackTitle.textContent = track.title || '—';
+      trackArtist.textContent = track.artist || '—';
+      setLink(spotifyLink, track.spotify_url);
+      setLink(appleLink, track.apple_music_url);
+    }
+
+    // ----------------------------
+    // CSV parsing
+    // ----------------------------
+    function timeToSeconds(hms) {
+      const s = String(hms || '').trim();
+      if (!s) return 0;
+      const parts = s.split(':').map(p => p.trim());
+      if (parts.length === 2) {
+        const mm = Number(parts[0]);
+        const ss = Number(parts[1]);
+        return (mm * 60) + ss;
+      }
+      if (parts.length === 3) {
+        const hh = Number(parts[0]);
+        const mm = Number(parts[1]);
+        const ss = Number(parts[2]);
+        return (hh * 3600) + (mm * 60) + ss;
+      }
+      return 0;
+    }
+
+    function parseCSV(text) {
+      // Minimal CSV parser that supports quoted fields.
+      const rows = [];
+      let row = [];
+      let cell = '';
+      let inQuotes = false;
+
+      for (let i = 0; i < text.length; i++) {
+        const ch = text[i];
+        const next = text[i + 1];
+
+        if (inQuotes) {
+          if (ch === '"' && next === '"') {
+            cell += '"';
+            i++;
+          } else if (ch === '"') {
+            inQuotes = false;
+          } else {
+            cell += ch;
+          }
+        } else {
+          if (ch === '"') {
+            inQuotes = true;
+          } else if (ch === ',') {
+            row.push(cell);
+            cell = '';
+          } else if (ch === '') {
+            row.push(cell);
+            rows.push(row);
+            row = [];
+            cell = '';
+          } else if (ch === '') {
+            // ignore
+          } else {
+            cell += ch;
+          }
+        }
+      }
+
+      // last cell
+      if (cell.length || row.length) {
+        row.push(cell);
+        rows.push(row);
+      }
+
+      return rows;
+    }
+
+    async function loadTracklistForSection(index) {
+      if (tracklistsBySection.has(index)) return tracklistsBySection.get(index);
+
+      const url = sections[index].tracklist;
+      const res = await fetch(url, { cache: 'no-store' });
+      if (!res.ok) throw new Error(`Failed to load tracklist: ${url}`);
+      const text = await res.text();
+
+      const rows = parseCSV(text);
+      if (!rows.length) {
+        tracklistsBySection.set(index, []);
+        return [];
+      }
+
+      // Normalize header names (supports your earlier CSV shape)
+      const header = rows[0].map(h => String(h || '').trim().toLowerCase());
+
+      const idxTime = header.findIndex(h => ['start_time','time','timestamp'].includes(h));
+      const idxTitle = header.findIndex(h => ['title','track title','track'].includes(h));
+      const idxArtist = header.findIndex(h => ['artist','artist name'].includes(h));
+      const idxSpotify = header.findIndex(h => ['spotify_url','spotify','spotify url'].includes(h));
+      const idxApple = header.findIndex(h => ['apple_music_url','apple','apple url','apple music','apple_music'].includes(h));
+
+      const tracks = [];
+      for (let r = 1; r < rows.length; r++) {
+        const cols = rows[r];
+        if (!cols || !cols.length) continue;
+
+        const start = timeToSeconds(cols[idxTime] ?? cols[0]);
+        const title = String(cols[idxTitle] ?? '').trim();
+        const artist = String(cols[idxArtist] ?? '').trim();
+        const spotify_url = String(cols[idxSpotify] ?? '').trim();
+        const apple_music_url = String(cols[idxApple] ?? '').trim();
+
+        // Ignore empty rows
+        if (!title && !artist) continue;
+
+        tracks.push({
+          start,
+          title,
+          artist,
+          spotify_url,
+          apple_music_url,
+        });
+      }
+
+      // Ensure sorted
+      tracks.sort((a, b) => a.start - b.start);
+
+      tracklistsBySection.set(index, tracks);
+      return tracks;
+    }
+
+    function findTrackIndex(tracks, seconds) {
+      // tracks sorted by start
+      if (!tracks || !tracks.length) return -1;
+      // quick bounds
+      if (seconds < tracks[0].start) return 0;
+      let lo = 0;
+      let hi = tracks.length - 1;
+      while (lo <= hi) {
+        const mid = (lo + hi) >> 1;
+        const a = tracks[mid];
+        const b = tracks[mid + 1];
+        if (seconds >= a.start && (!b || seconds < b.start)) return mid;
+        if (seconds < a.start) hi = mid - 1;
+        else lo = mid + 1;
+      }
+      return tracks.length - 1;
+    }
+
+    // ----------------------------
+    // Playback
+    // ----------------------------
+    async function setSection(index) {
+      currentSectionIndex = index;
+      currentTrackIndex = -1;
+
+      // Load tracklist in parallel with audio metadata
+      const tracklistPromise = loadTracklistForSection(index).catch(err => {
+        console.error(err);
+        return [];
+      });
+
+      audio.src = sections[index].audio;
+      audio.load();
+
+      const tracks = await tracklistPromise;
+      // Update UI immediately based on 0:00 in this section
+      const initialIdx = findTrackIndex(tracks, 0);
+      currentTrackIndex = initialIdx;
+      updateTrackUI(tracks[initialIdx]);
+    }
+
+    async function startRandom() {
       show(loading);
 
-      if (!started) {
-        await audio.play();
-        const duration = audio.duration;
-        audio.currentTime = Math.random() * duration;
-        started = true;
-      } else {
-        await audio.play();
+      // Choose a random section (uniform). Because sections are ~1 hour, this is fine.
+      // If you later have varied lengths, we can weight by duration.
+      const idx = Math.floor(Math.random() * sections.length);
+      await setSection(idx);
+
+      // Must begin playback on a user gesture, then seek once metadata is known.
+      await audio.play();
+
+      // Wait until duration is known (some browsers need a tick)
+      if (!Number.isFinite(audio.duration) || audio.duration <= 0) {
+        await new Promise(resolve => {
+          const onMeta = () => {
+            audio.removeEventListener('loadedmetadata', onMeta);
+            resolve();
+          };
+          audio.addEventListener('loadedmetadata', onMeta);
+        });
+      }
+
+      // Safety buffer so we don't land too close to the end.
+      const buffer = 3;
+      const max = Math.max(0, audio.duration - buffer);
+      audio.currentTime = Math.random() * max;
+
+      started = true;
+      // UI will switch to player on the 'play' event.
+    }
+
+    async function playFromCurrentState() {
+      show(loading);
+      await audio.play();
+    }
+
+    async function goToNextSectionAndPlay() {
+      const next = (currentSectionIndex + 1) % sections.length;
+      await setSection(next);
+      await audio.play();
+      audio.currentTime = 0;
+    }
+
+    // ----------------------------
+    // Event wiring
+    // ----------------------------
+    playBtn.addEventListener('click', async () => {
+      try {
+        if (!started) {
+          await startRandom();
+        } else {
+          await playFromCurrentState();
+        }
+      } catch (err) {
+        console.error(err);
+        show(landing);
+        showToast('Playback failed. Try again.');
       }
     });
 
-    pauseBtn.addEventListener('click', () => {
-      if (audio.paused) {
-        audio.play();
-      } else {
-        audio.pause();
+    toggleBtn.addEventListener('click', async () => {
+      try {
+        if (audio.paused) {
+          show(loading);
+          await audio.play();
+        } else {
+          audio.pause();
+        }
+      } catch (err) {
+        console.error(err);
+        showToast('Playback failed. Try again.');
       }
     });
-      pauseBtn.textContent = 'Play';
 
     audio.addEventListener('play', () => {
-      pauseBtn.textContent = 'Pause';
+      toggleBtn.textContent = 'Pause';
       show(player);
     });
 
     audio.addEventListener('pause', () => {
-      pauseBtn.textContent = 'Play';
+      toggleBtn.textContent = 'Play';
+      // Remain in player state
     });
 
-    // Placeholder track data (will be replaced by CSV logic)
-    function updateTrack(title, artist, spotify, apple) {
-      trackTitle.textContent = title;
-      trackArtist.textContent = artist;
-      spotifyLink.href = spotify || '#';
-      appleLink.href = apple || '#';
+    audio.addEventListener('ended', async () => {
+      // Seamless chronological playback
+      try {
+        await goToNextSectionAndPlay();
+      } catch (err) {
+        console.error(err);
+        showToast('Could not load the next section.');
+      }
+    });
+
+    audio.addEventListener('timeupdate', () => {
+      const tracks = tracklistsBySection.get(currentSectionIndex) || [];
+      if (!tracks.length) return;
+
+      const t = audio.currentTime;
+      const idx = findTrackIndex(tracks, t);
+      if (idx !== currentTrackIndex) {
+        currentTrackIndex = idx;
+        updateTrackUI(tracks[idx]);
+      }
+    });
+
+    // Streaming link behavior: if missing, show message instead of navigating.
+    function attachUnavailableHandler(el) {
+      el.addEventListener('click', (e) => {
+        if (el.classList.contains('disabled') || el.getAttribute('aria-disabled') === 'true' || el.getAttribute('href') === '#') {
+          e.preventDefault();
+          showToast(NOT_AVAILABLE_MSG);
+        }
+      });
     }
 
-    updateTrack('Track title', 'Artist name', '#', '#');
+    attachUnavailableHandler(spotifyLink);
+    attachUnavailableHandler(appleLink);
+
+    // Initial state
+    show(landing);
+    updateTrackUI(null);
   </script>
 </body>
 </html>
-
