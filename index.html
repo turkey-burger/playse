@@ -84,15 +84,18 @@
         <div class="logo">playse</div>
         <button class="play-btn" id="toggleBtn">Pause</button>
 
-        <div class="track">
-          <div class="title" id="trackTitle">—</div>
-          <div class="artist" id="trackArtist">—</div>
+        $1
+
+        <div class="actions" style="margin-top: 28px; display:flex; gap:16px; justify-content:center;">
+          <a id="spotifyLink" href="#" target="_blank" rel="noopener" style="color:var(--fg); text-decoration:none; border-bottom:1px solid var(--fg); font-size:12px;">Spotify</a>
+          <a id="appleLink" href="#" target="_blank" rel="noopener" style="color:var(--fg); text-decoration:none; border-bottom:1px solid var(--fg); font-size:12px;">Apple Music</a>
         </div>
       </div>
 
       <audio id="audio" preload="metadata"></audio>
-    </div>
-  </div>
+    $1
+
+  <div id="toast" style="position:fixed; left:50%; bottom:22px; transform:translateX(-50%); max-width:min(520px, calc(100vw - 24px)); padding:12px 14px; border:1px solid rgba(255,255,255,0.25); background:rgba(255,255,255,0.12); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); color:var(--fg); font-size:12px; line-height:1.4; border-radius:999px; opacity:0; pointer-events:none; transition:opacity 160ms ease; text-align:center;"></div>
 
   <!-- CSV parser (safe, battle-tested) -->
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
@@ -145,6 +148,45 @@
     // ----------------------------
     const trackTitle = document.getElementById('trackTitle');
     const trackArtist = document.getElementById('trackArtist');
+    const spotifyLink = document.getElementById('spotifyLink');
+    const appleLink = document.getElementById('appleLink');
+    const toast = document.getElementById('toast');
+
+    const NOT_AVAILABLE_MSG = "Sorry, this song isn't available on the selected streaming service";
+
+    let toastTimer = null;
+    function showToast(message) {
+      toast.textContent = message;
+      toast.style.opacity = '1';
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.style.opacity = '0';
+      }, 2400);
+    }
+
+    function setLink(el, url) {
+      const has = !!(url && String(url).trim());
+      if (has) {
+        el.href = url;
+        el.style.opacity = '1';
+      } else {
+        el.href = '#';
+        el.style.opacity = '0.35';
+      }
+    }
+
+    function attachUnavailableHandler(el) {
+      el.addEventListener('click', (e) => {
+        const href = el.getAttribute('href');
+        if (!href || href === '#') {
+          e.preventDefault();
+          showToast(NOT_AVAILABLE_MSG);
+        }
+      });
+    }
+
+    attachUnavailableHandler(spotifyLink);
+    attachUnavailableHandler(appleLink);
 
     const TRACKLIST_URL = 'playse_1_tracklist.csv';
 
@@ -165,11 +207,30 @@
       const text = await res.text();
       const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
 
-      tracks = parsed.data.map(row => ({
-        start: hmsToSeconds(row.start_time || row.time),
-        title: row.title || '—',
-        artist: row.artist || '—'
-      })).sort((a, b) => a.start - b.start);
+      const normalize = (s) => String(s || '').trim().toLowerCase();
+
+      tracks = (parsed.data || []).map(row => {
+        const keys = Object.keys(row || {});
+        const get = (...candidates) => {
+          const k = keys.find(key => candidates.includes(normalize(key)));
+          return k ? row[k] : '';
+        };
+
+        const time = get('start_time','time','timestamp');
+        const title = get('title','track title','track','song','song title');
+        const artist = get('artist','artist name','artists','artist(s)');
+        const spotify = get('spotify_url','spotify url','spotify','spotify link');
+        const apple = get('apple_music_url','apple url','apple','apple music','apple link');
+
+        return {
+          start: hmsToSeconds(time),
+          title: String(title || '').trim() || '—',
+          artist: String(artist || '').trim() || '—',
+          spotify_url: String(spotify || '').trim(),
+          apple_music_url: String(apple || '').trim(),
+        };
+      }).filter(t => t.title !== '—' || t.artist !== '—')
+        .sort((a, b) => a.start - b.start);
 
       console.log('Loaded tracks:', tracks.length);
     }
@@ -188,6 +249,8 @@
         currentTrackIndex = idx;
         trackTitle.textContent = tracks[idx].title;
         trackArtist.textContent = tracks[idx].artist;
+        setLink(spotifyLink, tracks[idx].spotify_url);
+        setLink(appleLink, tracks[idx].apple_music_url);
       }
     });
 
