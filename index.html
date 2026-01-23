@@ -16,10 +16,11 @@
       --fg: #fff;
       --muted: rgba(255,255,255,0.6);
       --border: rgba(255,255,255,0.9);
+      --toast-bg: rgba(255,255,255,0.12);
+      --toast-border: rgba(255,255,255,0.25);
     }
 
     * { box-sizing: border-box; }
-
     html, body { height: 100%; }
 
     body {
@@ -39,12 +40,13 @@
 
     .frame {
       width: 100%;
-      max-width: 480px;
+      max-width: 520px;
       text-align: center;
     }
 
     .logo {
       font-size: 28px;
+      letter-spacing: 0.02em;
       margin-bottom: 40px;
     }
 
@@ -60,6 +62,8 @@
       cursor: pointer;
     }
 
+    .play-btn:active { transform: scale(0.98); }
+
     .track {
       margin-top: 32px;
       line-height: 1.6;
@@ -68,199 +72,386 @@
     .track .title { font-size: 14px; }
     .track .artist { font-size: 13px; color: var(--muted); }
 
+    .actions {
+      margin-top: 28px;
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+    }
+
+    .actions a {
+      color: var(--fg);
+      text-decoration: none;
+      border-bottom: 1px solid var(--fg);
+      font-size: 12px;
+      opacity: 1;
+    }
+
+    .actions a.disabled {
+      opacity: 0.35;
+      border-bottom-color: transparent;
+    }
+
     .hidden { display: none; }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 22px;
+      transform: translateX(-50%);
+      max-width: min(520px, calc(100vw - 24px));
+      padding: 12px 14px;
+      border: 1px solid var(--toast-border);
+      background: var(--toast-bg);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      color: var(--fg);
+      font-size: 12px;
+      line-height: 1.4;
+      border-radius: 999px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 160ms ease;
+      text-align: center;
+    }
+
+    .toast.show { opacity: 1; }
+
+    @media (max-width: 480px) {
+      .logo { font-size: 24px; }
+      .play-btn { width: 96px; height: 96px; }
+    }
   </style>
 </head>
+
 <body>
   <div class="app">
     <div class="frame">
 
+      <!-- LANDING -->
+      <div id="state-landing">
+        <div class="logo">playse</div>
+        <button class="play-btn" id="playBtn">Play</button>
+      </div>
+
+      <!-- PLAYER -->
       <div id="state-player" class="hidden">
-  <div class="logo">playse</div>
-  <button class="play-btn" id="toggleBtn">Pause</button>
+        <div class="logo">playse</div>
+        <button class="play-btn" id="toggleBtn">Pause</button>
 
-  <div class="track">
-    <div class="title" id="trackTitle">—</div>
-    <div class="artist" id="trackArtist">—</div>
-  </div>
+        <div class="track">
+          <div class="title" id="trackTitle">—</div>
+          <div class="artist" id="trackArtist">—</div>
+        </div>
 
-  <div class="actions" style="margin-top: 28px; display:flex; gap:16px; justify-content:center;">
-    <a id="spotifyLink" href="#" target="_blank" rel="noopener"
-       style="color:var(--fg); text-decoration:none; border-bottom:1px solid var(--fg); font-size:12px;">
-      Spotify
-    </a>
-    <a id="appleLink" href="#" target="_blank" rel="noopener"
-       style="color:var(--fg); text-decoration:none; border-bottom:1px solid var(--fg); font-size:12px;">
-      Apple Music
-    </a>
-  </div>
-</div>
-
+        <div class="actions">
+          <a id="spotifyLink" href="#" target="_blank" rel="noopener">Spotify</a>
+          <a id="appleLink" href="#" target="_blank" rel="noopener">Apple Music</a>
+        </div>
+      </div>
 
       <audio id="audio" preload="metadata"></audio>
+    </div>
+  </div>
 
-<div id="toast"
-     style="position:fixed; left:50%; bottom:22px; transform:translateX(-50%);
-            max-width:min(520px, calc(100vw - 24px)); padding:12px 14px;
-            border:1px solid rgba(255,255,255,0.25); background:rgba(255,255,255,0.12);
-            backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
-            color:var(--fg); font-size:12px; line-height:1.4; border-radius:999px;
-            opacity:0; pointer-events:none; transition:opacity 160ms ease; text-align:center;">
-</div>
+  <div class="toast" id="toast" aria-live="polite" aria-atomic="true"></div>
 
-</body>
-
-  <!-- CSV parser (safe, battle-tested) -->
+  <!-- Robust CSV parser -->
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
   <script>
-    // ----------------------------
-    // BASIC PLAYER (known-good)
-    // ----------------------------
-    const audio = document.getElementById('audio');
-    const playBtn = document.getElementById('playBtn');
-    const toggleBtn = document.getElementById('toggleBtn');
-    const landing = document.getElementById('state-landing');
-    const player = document.getElementById('state-player');
+    document.addEventListener('DOMContentLoaded', () => {
+      // ----------------------------
+      // CONFIG
+      // ----------------------------
+      const sections = [
+        { audio: 'playse_1.mp3', tracklist: 'playse_1_tracklist.csv' },
+        { audio: 'playse_2.mp3', tracklist: 'playse_2_tracklist.csv' },
+        { audio: 'playse_3.mp3', tracklist: 'playse_3_tracklist.csv' },
+        { audio: 'playse_4.mp3', tracklist: 'playse_4_tracklist.csv' },
+        { audio: 'playse_5.mp3', tracklist: 'playse_5_tracklist.csv' },
+        { audio: 'playse_6.mp3', tracklist: 'playse_6_tracklist.csv' },
+      ];
 
-    audio.src = 'playse_1.mp3';
+      const NOT_AVAILABLE_MSG = "Sorry, this song isn't available on the selected streaming service";
 
-    let started = false;
+      // ----------------------------
+      // DOM
+      // ----------------------------
+      const audio = document.getElementById('audio');
 
-    function showPlayer() {
-      landing.classList.add('hidden');
-      player.classList.remove('hidden');
-    }
+      const landing = document.getElementById('state-landing');
+      const player = document.getElementById('state-player');
 
-    playBtn.addEventListener('click', async () => {
-      if (!started) {
-        await audio.play();
-        audio.currentTime = Math.random() * Math.max(0, audio.duration - 2);
-        started = true;
-      } else {
-        await audio.play();
+      const playBtn = document.getElementById('playBtn');
+      const toggleBtn = document.getElementById('toggleBtn');
+
+      const trackTitle = document.getElementById('trackTitle');
+      const trackArtist = document.getElementById('trackArtist');
+      const spotifyLink = document.getElementById('spotifyLink');
+      const appleLink = document.getElementById('appleLink');
+
+      const toast = document.getElementById('toast');
+
+      // ----------------------------
+      // STATE
+      // ----------------------------
+      let started = false;
+      let currentSectionIndex = 0;
+      let tracks = [];
+      let currentTrackIndex = -1;
+      let toastTimer = null;
+
+      // ----------------------------
+      // UI helpers
+      // ----------------------------
+      function showLanding() {
+        landing.classList.remove('hidden');
+        player.classList.add('hidden');
       }
-    });
 
-    toggleBtn.addEventListener('click', () => {
-      if (audio.paused) audio.play();
-      else audio.pause();
-    });
+      function showPlayer() {
+        landing.classList.add('hidden');
+        player.classList.remove('hidden');
+      }
 
-    audio.addEventListener('play', () => {
-      toggleBtn.textContent = 'Pause';
-      showPlayer();
-    });
+      function showToast(message) {
+        toast.textContent = message;
+        toast.classList.add('show');
+        if (toastTimer) clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toast.classList.remove('show'), 2400);
+      }
 
-    audio.addEventListener('pause', () => {
-      toggleBtn.textContent = 'Play';
-    });
+      function setLink(el, url) {
+        const has = !!(url && String(url).trim());
+        if (has) {
+          el.href = url;
+          el.classList.remove('disabled');
+          el.setAttribute('aria-disabled', 'false');
+        } else {
+          el.href = '#';
+          el.classList.add('disabled');
+          el.setAttribute('aria-disabled', 'true');
+        }
+      }
 
-    // ----------------------------
-    // TRACKLIST + SECTIONS (COMMIT B)
-    // ----------------------------
+      function attachUnavailableHandler(el) {
+        el.addEventListener('click', (e) => {
+          const href = el.getAttribute('href');
+          if (!href || href === '#') {
+            e.preventDefault();
+            showToast(NOT_AVAILABLE_MSG);
+          }
+        });
+      }
 
-    const sections = [
-      { audio: 'playse_1.mp3', tracklist: 'playse_1_tracklist.csv' },
-      { audio: 'playse_2.mp3', tracklist: 'playse_2_tracklist.csv' },
-      { audio: 'playse_3.mp3', tracklist: 'playse_3_tracklist.csv' },
-      { audio: 'playse_4.mp3', tracklist: 'playse_4_tracklist.csv' },
-      { audio: 'playse_5.mp3', tracklist: 'playse_5_tracklist.csv' },
-      { audio: 'playse_6.mp3', tracklist: 'playse_6_tracklist.csv' },
-    ];
+      attachUnavailableHandler(spotifyLink);
+      attachUnavailableHandler(appleLink);
 
-    let currentSectionIndex = 0;
-    let tracks = [];
-    let currentTrackIndex = -1;
+      function updateTrackUI(track) {
+        trackTitle.textContent = track?.title?.trim() || '—';
+        trackArtist.textContent = track?.artist?.trim() || '—';
+        setLink(spotifyLink, track?.spotify_url || '');
+        setLink(appleLink, track?.apple_music_url || '');
+      }
 
-    function hmsToSeconds(hms) {
-      const parts = String(hms || '').trim().split(':').map(Number);
-      if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
-      if (parts.length === 2) return parts[0] * 60 + parts[1];
-      return 0;
-    }
+      // ----------------------------
+      // Tracklist parsing
+      // ----------------------------
+      function hmsToSeconds(hms) {
+        const parts = String(hms || '').trim().split(':').map(Number);
+        if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+        if (parts.length === 2) return parts[0] * 60 + parts[1];
+        return 0;
+      }
 
-    async function loadTracklistForSection(index) {
-      const url = sections[index].tracklist;
-      const res = await fetch(url, { cache: 'no-store' });
-      if (!res.ok) throw new Error('Tracklist fetch failed: ' + url);
+      function normalizeHeader(s) {
+        return String(s || '').trim().toLowerCase();
+      }
 
-      const text = await res.text();
-      const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
-
-      const normalize = (s) => String(s || '').trim().toLowerCase();
-
-      tracks = (parsed.data || []).map(row => {
+      function getField(row, candidates) {
         const keys = Object.keys(row || {});
-        const get = (...candidates) => {
-          const k = keys.find(key => candidates.includes(normalize(key)));
-          return k ? row[k] : '';
-        };
-
-        const time = get('start_time','time','timestamp');
-        const title = get('title','track title','track','song','song title');
-        const artist = get('artist','artist name','artists','artist(s)');
-        const spotify = get('spotify_url','spotify url','spotify','spotify link');
-        const apple = get('apple_music_url','apple url','apple','apple music','apple link');
-
-        return {
-          start: hmsToSeconds(time),
-          title: String(title || '').trim(),
-          artist: String(artist || '').trim(),
-          spotify_url: String(spotify || '').trim(),
-          apple_music_url: String(apple || '').trim(),
-        };
-      }).filter(t => t.title || t.artist)
-        .sort((a, b) => a.start - b.start);
-
-      currentTrackIndex = -1;
-      console.log('Loaded tracks for section', index, tracks.length);
-    }
-
-    function findTrackIndex(seconds) {
-      for (let i = tracks.length - 1; i >= 0; i--) {
-        if (seconds >= tracks[i].start) return i;
+        const normalized = new Map(keys.map(k => [normalizeHeader(k), k]));
+        for (const c of candidates) {
+          const hit = normalized.get(normalizeHeader(c));
+          if (hit != null) return row[hit];
+        }
+        return '';
       }
-      return -1;
-    }
 
-    async function setSection(index, startAtRandom = false) {
-      currentSectionIndex = index;
-      audio.src = sections[index].audio;
-      await loadTracklistForSection(index);
-      await audio.play();
+      async function loadTracklistForSection(index) {
+        const url = sections[index].tracklist;
+        const res = await fetch(url, { cache: 'no-store' });
+        if (!res.ok) throw new Error(`Tracklist fetch failed (${res.status}): ${url}`);
 
-      if (startAtRandom) {
-        await new Promise(r => audio.addEventListener('loadedmetadata', r, { once: true }));
-        const max = Math.max(0, audio.duration - 2);
+        const text = await res.text();
+        const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
+
+        if (parsed.errors?.length) {
+          console.warn('CSV parse warnings:', parsed.errors);
+        }
+
+        tracks = (parsed.data || [])
+          .map(row => {
+            // Supports your Google Sheets headers:
+            // Time, Track Title, Artist Name, Spotify URL, Apple URL
+            const time = getField(row, ['start_time','time','timestamp','Time']);
+            const title = getField(row, ['title','track title','Track Title','song','song title']);
+            const artist = getField(row, ['artist','artist name','Artist Name','artists','artist(s)']);
+            const spotify = getField(row, ['spotify_url','spotify url','Spotify URL','spotify','spotify link']);
+            const apple = getField(row, ['apple_music_url','apple url','Apple URL','apple','apple music','apple link']);
+
+            return {
+              start: hmsToSeconds(time),
+              title: String(title || '').trim(),
+              artist: String(artist || '').trim(),
+              spotify_url: String(spotify || '').trim(),
+              apple_music_url: String(apple || '').trim(),
+            };
+          })
+          .filter(t => t.title || t.artist)
+          .sort((a, b) => a.start - b.start);
+
+        currentTrackIndex = -1;
+        console.log(`Loaded tracks for section ${index + 1}:`, tracks.length);
+      }
+
+      function findTrackIndex(seconds) {
+        // tracks sorted by start; scan backwards (simple & fine for ~hundreds of tracks)
+        for (let i = tracks.length - 1; i >= 0; i--) {
+          if (seconds >= tracks[i].start) return i;
+        }
+        return tracks.length ? 0 : -1;
+      }
+
+      // ----------------------------
+      // Section control
+      // ----------------------------
+      async function setSection(index, { startAtSeconds = 0, autoplay = false } = {}) {
+        currentSectionIndex = index;
+        currentTrackIndex = -1;
+
+        // Load tracklist first (fast) so UI can update immediately after seeking
+        await loadTracklistForSection(index);
+
+        audio.src = sections[index].audio;
+        audio.load();
+
+        // Wait for duration/metadata so seeking works reliably
+        await new Promise(resolve => {
+          const onMeta = () => {
+            audio.removeEventListener('loadedmetadata', onMeta);
+            resolve();
+          };
+          audio.addEventListener('loadedmetadata', onMeta);
+        });
+
+        // clamp start time
+        const safeStart = Math.max(0, Math.min(startAtSeconds, Math.max(0, audio.duration - 0.25)));
+        audio.currentTime = safeStart;
+
+        // Update UI immediately based on currentTime
+        const idx = findTrackIndex(audio.currentTime);
+        if (idx >= 0) {
+          currentTrackIndex = idx;
+          updateTrackUI(tracks[idx]);
+        } else {
+          updateTrackUI(null);
+        }
+
+        if (autoplay) {
+          await audio.play();
+        }
+      }
+
+      async function startRandomFirstPlay() {
+        // Random section
+        const idx = Math.floor(Math.random() * sections.length);
+
+        // Set section without autoplay first, then play under user gesture, then seek to random time
+        await setSection(idx, { startAtSeconds: 0, autoplay: false });
+        await audio.play();
+
+        // Now that it's playing, do random seek (still within user gesture context)
+        const buffer = 2; // avoid ending immediately
+        const max = Math.max(0, audio.duration - buffer);
         audio.currentTime = Math.random() * max;
-      } else {
-        audio.currentTime = 0;
+
+        // Update UI after seek
+        const ti = findTrackIndex(audio.currentTime);
+        if (ti >= 0) {
+          currentTrackIndex = ti;
+          updateTrackUI(tracks[ti]);
+        }
+
+        started = true;
       }
-    }
 
-    audio.addEventListener('timeupdate', () => {
-      if (!tracks.length) return;
-      const idx = findTrackIndex(audio.currentTime);
-      if (idx !== currentTrackIndex && idx >= 0) {
-        currentTrackIndex = idx;
-        trackTitle.textContent = tracks[idx].title || '—';
-        trackArtist.textContent = tracks[idx].artist || '—';
-        setLink(spotifyLink, tracks[idx].spotify_url);
-        setLink(appleLink, tracks[idx].apple_music_url);
-      }
+      // ----------------------------
+      // Events
+      // ----------------------------
+      playBtn.addEventListener('click', async () => {
+        try {
+          if (!started) {
+            await startRandomFirstPlay();
+          } else {
+            await audio.play();
+          }
+        } catch (err) {
+          console.error(err);
+          showToast('Playback failed. Try again.');
+          showLanding();
+        }
+      });
+
+      toggleBtn.addEventListener('click', async () => {
+        try {
+          if (audio.paused) {
+            await audio.play();
+          } else {
+            audio.pause();
+          }
+        } catch (err) {
+          console.error(err);
+          showToast('Playback failed. Try again.');
+        }
+      });
+
+      audio.addEventListener('play', () => {
+        toggleBtn.textContent = 'Pause';
+        showPlayer();
+      });
+
+      audio.addEventListener('pause', () => {
+        toggleBtn.textContent = 'Play';
+      });
+
+      audio.addEventListener('timeupdate', () => {
+        if (!tracks.length) return;
+        const idx = findTrackIndex(audio.currentTime);
+        if (idx !== currentTrackIndex && idx >= 0) {
+          currentTrackIndex = idx;
+          updateTrackUI(tracks[idx]);
+        }
+      });
+
+      audio.addEventListener('ended', async () => {
+        try {
+          // Seamless chronological playback
+          const next = (currentSectionIndex + 1) % sections.length;
+          await setSection(next, { startAtSeconds: 0, autoplay: true });
+        } catch (err) {
+          console.error(err);
+          showToast('Could not load the next section.');
+        }
+      });
+
+      // Initial state
+      showLanding();
+      updateTrackUI(null);
+      setLink(spotifyLink, '');
+      setLink(appleLink, '');
     });
-
-    audio.addEventListener('ended', async () => {
-      const next = (currentSectionIndex + 1) % sections.length;
-      await setSection(next, false);
-    });
-
-    // start on random section + time
-    (async () => {
-      const idx = Math.floor(Math.random() * sections.length);
-      await setSection(idx, true);
-    })().catch(err => console.error(err));(err => console.error(err));
   </script>
 </body>
 </html>
