@@ -5,19 +5,54 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>playse</title>
 
-  <!-- Google Font: Oxygen Mono -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Oxygen+Mono&display=swap" rel="stylesheet">
-
   <style>
+    /*
+      UI pass (matches Figma exports):
+      - Full-bleed gradient background
+      - Desktop: logo top-left
+      - Mobile: logo centered
+      - Icon-only Play/Pause
+      - Track + Add-to-Library layout
+      - Loading dots state
+    */
+
+    @font-face {
+      font-family: "ABCDiatypeMono";
+      src: url("./fonts/ABCDiatypeMono-Light-Trial.woff2") format("woff2");
+      font-weight: 300;
+      font-style: normal;
+      font-display: swap;
+    }
+
     :root {
-      --bg: #000;
-      --fg: #fff;
-      --muted: rgba(255,255,255,0.6);
-      --border: rgba(255,255,255,0.9);
-      --toast-bg: rgba(255,255,255,0.12);
-      --toast-border: rgba(255,255,255,0.25);
+      --bg-top: #9aa0a7;
+      --bg-mid: #6f7a83;
+      --bg-bot: #4b5a66;
+
+      --fg: #ffffff;
+      --fg-dim: rgba(255,255,255,0.55);
+
+      --pad-desktop: 64px;
+      --pad-mobile: 56px;
+
+      --logo-size-desktop: 44px;
+      --logo-size-mobile: 72px;
+      --logo-tracking-desktop: 0.55em;
+      --logo-tracking-mobile: 0.28em;
+
+      --btn-size-desktop: 92px;
+      --btn-size-mobile: 88px;
+
+      --title-size-desktop: 22px;
+      --artist-size-desktop: 20px;
+      --title-size-mobile: 26px;
+      --artist-size-mobile: 22px;
+
+      --library-label-size-desktop: 22px;
+      --library-label-size-mobile: 28px;
+
+      --toast-bg: rgba(255,255,255,0.14);
+      --toast-border: rgba(255,255,255,0.28);
     }
 
     * { box-sizing: border-box; }
@@ -25,89 +60,206 @@
 
     body {
       margin: 0;
-      background: var(--bg);
       color: var(--fg);
-      font-family: 'Oxygen Mono', monospace;
+      font-family: "ABCDiatypeMono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-weight: 300;
+      background: linear-gradient(180deg, var(--bg-top) 0%, var(--bg-mid) 55%, var(--bg-bot) 100%);
+      overflow: hidden;
     }
 
-    .app {
+    /* Prevent accidental text selection on tap/click */
+    .noselect {
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Screens */
+    .screen {
       min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
+      width: 100vw;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      padding: var(--pad-desktop);
     }
 
-    .frame {
-      width: 100%;
-      max-width: 520px;
-      text-align: center;
+    .hidden { display: none !important; }
+
+    /* Top bar */
+    .top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: flex-start;
     }
 
     .logo {
-      font-size: 28px;
-      letter-spacing: 0.02em;
-      margin-bottom: 40px;
+      font-size: var(--logo-size-desktop);
+      letter-spacing: var(--logo-tracking-desktop);
+      line-height: 1;
+      text-transform: lowercase;
     }
 
-    .play-btn {
-      appearance: none;
-      background: none;
-      border: 2px solid var(--border);
-      color: var(--fg);
-      width: 120px;
-      height: 120px;
-      border-radius: 999px;
-      font-size: 16px;
-      cursor: pointer;
-    }
-
-    .play-btn:active { transform: scale(0.98); }
-
-    .track {
-      margin-top: 32px;
-      line-height: 1.6;
-    }
-
-    .track .title { font-size: 14px; }
-    .track .artist { font-size: 13px; color: var(--muted); }
-
-    .actions {
-      margin-top: 28px;
+    /* Center stack */
+    .center {
       display: flex;
-      gap: 16px;
+      flex-direction: column;
+      align-items: center;
       justify-content: center;
+      gap: 24px; /* 3 x 8px */
     }
 
-    .actions a {
+    /* The icon-only button */
+    .icon-btn {
+      appearance: none;
+      border: none;
+      background: transparent;
+      width: var(--btn-size-desktop);
+      height: var(--btn-size-desktop);
+      padding: 0;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      color: var(--fg);
+    }
+
+    .icon-btn:active {
+      transform: scale(0.98);
+    }
+
+    /* Play icon */
+    .icon-play {
+      width: 0;
+      height: 0;
+      border-top: 26px solid transparent;
+      border-bottom: 26px solid transparent;
+      border-left: 44px solid var(--fg);
+      transform: translateX(4px);
+      filter: drop-shadow(0 0 0 rgba(0,0,0,0));
+    }
+
+    /* Pause icon */
+    .icon-pause {
+      width: 54px;
+      height: 58px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .icon-pause > span {
+      display: block;
+      background: var(--fg);
+      border-radius: 4px;
+    }
+
+    /* Track text */
+    .track {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 8px; /* 1 x 8px */
+    }
+
+    .track .title {
+      font-size: var(--title-size-desktop);
+      letter-spacing: 0.08em;
+      line-height: 1.2;
+    }
+
+    .track .artist {
+      font-size: var(--artist-size-desktop);
+      letter-spacing: 0.06em;
+      color: var(--fg-dim);
+      line-height: 1.2;
+    }
+
+    /* Bottom library */
+    .bottom {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 18px;
+      padding-bottom: 24px;
+    }
+
+    .library-label {
+      font-size: var(--library-label-size-desktop);
+      letter-spacing: 0.12em;
+      text-transform: none;
+    }
+
+    .services {
+      display: flex;
+      align-items: center;
+      gap: 64px; /* 8-col feel */
+    }
+
+    .service-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
       color: var(--fg);
       text-decoration: none;
-      border-bottom: 1px solid var(--fg);
-      font-size: 12px;
       opacity: 1;
     }
 
-    .actions a.disabled {
-      opacity: 0.35;
-      border-bottom-color: transparent;
+    .service-link.disabled { opacity: 0.4; }
+
+    .service-icon {
+      width: 38px;
+      height: 38px;
+      display: inline-block;
     }
 
-    .hidden { display: none; }
+    .service-word {
+      font-size: 30px;
+      letter-spacing: 0.02em;
+    }
 
+    /* Loading dots */
+    .dots {
+      display: inline-flex;
+      gap: 22px;
+      align-items: center;
+      justify-content: center;
+      height: var(--btn-size-desktop);
+    }
+
+    .dot {
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      background: var(--fg);
+      opacity: 0.95;
+      animation: bounce 900ms infinite ease-in-out;
+    }
+
+    .dot:nth-child(2) { animation-delay: 120ms; }
+    .dot:nth-child(3) { animation-delay: 240ms; }
+
+    @keyframes bounce {
+      0%, 80%, 100% { transform: translateY(0); opacity: 0.9; }
+      40% { transform: translateY(-10px); opacity: 1; }
+    }
+
+    /* Toast */
     .toast {
       position: fixed;
       left: 50%;
       bottom: 22px;
       transform: translateX(-50%);
-      max-width: min(520px, calc(100vw - 24px));
+      max-width: min(560px, calc(100vw - 24px));
       padding: 12px 14px;
       border: 1px solid var(--toast-border);
       background: var(--toast-bg);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
       color: var(--fg);
-      font-size: 12px;
-      line-height: 1.4;
+      font-size: 14px;
+      letter-spacing: 0.02em;
+      line-height: 1.35;
       border-radius: 999px;
       opacity: 0;
       pointer-events: none;
@@ -117,41 +269,151 @@
 
     .toast.show { opacity: 1; }
 
-    @media (max-width: 480px) {
-      .logo { font-size: 24px; }
-      .play-btn { width: 96px; height: 96px; }
+    /* Mobile */
+    @media (max-width: 520px) {
+      .screen {
+        padding: var(--pad-mobile);
+        grid-template-rows: auto 1fr auto;
+      }
+
+      .top {
+        justify-content: center;
+      }
+
+      .logo {
+        font-size: var(--logo-size-mobile);
+        letter-spacing: var(--logo-tracking-mobile);
+      }
+
+      .center {
+        /* Nudge the control stack lower like the mock */
+        transform: translateY(60px);
+        gap: 28px;
+      }
+
+      .icon-btn {
+        width: var(--btn-size-mobile);
+        height: var(--btn-size-mobile);
+      }
+
+      .icon-play {
+        border-top: 24px solid transparent;
+        border-bottom: 24px solid transparent;
+        border-left: 40px solid var(--fg);
+      }
+
+      .icon-pause {
+        width: 50px;
+        height: 56px;
+        gap: 14px;
+      }
+
+      .track .title {
+        font-size: var(--title-size-mobile);
+        letter-spacing: 0.14em;
+      }
+
+      .track .artist {
+        font-size: var(--artist-size-mobile);
+        letter-spacing: 0.10em;
+      }
+
+      .bottom {
+        padding-bottom: 34px;
+        gap: 20px;
+      }
+
+      .library-label {
+        font-size: var(--library-label-size-mobile);
+        letter-spacing: 0.14em;
+        text-transform: lowercase;
+      }
+
+      .services {
+        gap: 56px;
+      }
+
+      .service-icon {
+        width: 42px;
+        height: 42px;
+      }
+
+      .service-word {
+        font-size: 34px;
+      }
     }
   </style>
 </head>
 
-<body>
-  <div class="app">
-    <div class="frame">
-
-      <!-- LANDING -->
-      <div id="state-landing">
-        <div class="logo">playse</div>
-        <button class="play-btn" id="playBtn">Play</button>
-      </div>
-
-      <!-- PLAYER -->
-      <div id="state-player" class="hidden">
-        <div class="logo">playse</div>
-        <button class="play-btn" id="toggleBtn">Pause</button>
-
-        <div class="track">
-          <div class="title" id="trackTitle">—</div>
-          <div class="artist" id="trackArtist">—</div>
-        </div>
-
-        <div class="actions">
-          <a id="spotifyLink" href="#" target="_blank" rel="noopener">Spotify</a>
-          <a id="appleLink" href="#" target="_blank" rel="noopener">Apple Music</a>
-        </div>
-      </div>
-
-      <audio id="audio" preload="metadata"></audio>
+<body class="noselect">
+  <!-- LANDING -->
+  <div id="state-landing" class="screen">
+    <div class="top"><div class="logo" aria-label="playse">playse</div></div>
+    <div class="center">
+      <button class="icon-btn" id="playBtn" aria-label="Play">
+        <div class="icon-play" aria-hidden="true"></div>
+      </button>
     </div>
+    <div class="bottom"></div>
+  </div>
+
+  <!-- LOADING (shown briefly after first Play) -->
+  <div id="state-loading" class="screen hidden">
+    <div class="top"><div class="logo" aria-label="playse">playse</div></div>
+    <div class="center" aria-label="Loading">
+      <div class="dots" aria-hidden="true">
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+      </div>
+    </div>
+    <div class="bottom"></div>
+  </div>
+
+  <!-- PLAYER (Playing + Paused share this screen) -->
+  <div id="state-player" class="screen hidden">
+    <div class="top"><div class="logo" aria-label="playse">playse</div></div>
+
+    <div class="center">
+      <button class="icon-btn" id="toggleBtn" aria-label="Pause">
+        <!-- Default to pause icon; JS swaps to play when paused -->
+        <div class="icon-pause" id="pauseIcon" aria-hidden="true"><span></span><span></span></div>
+        <div class="icon-play hidden" id="playIcon" aria-hidden="true"></div>
+      </button>
+
+      <div class="track" aria-live="polite" aria-atomic="true">
+        <div class="title" id="trackTitle">—</div>
+        <div class="artist" id="trackArtist">—</div>
+      </div>
+    </div>
+
+    <div class="bottom">
+      <div class="library-label">Add to Library</div>
+      <div class="services">
+        <a id="spotifyLink" class="service-link" href="#" target="_blank" rel="noopener" aria-label="Add to Spotify">
+          <!-- Simple Spotify mark (SVG) -->
+          <svg class="service-icon" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <circle cx="32" cy="32" r="30" stroke="white" stroke-width="0" fill="white" fill-opacity="0.0"/>
+            <path d="M32 6C17.64 6 6 17.64 6 32s11.64 26 26 26 26-11.64 26-26S46.36 6 32 6Z" fill="white" fill-opacity="0.0"/>
+            <path d="M48.6 36.8c-8.9-5.3-23.6-5.8-32.1-3.3" stroke="white" stroke-width="4.2" stroke-linecap="round" opacity="0.95"/>
+            <path d="M46.8 44.1c-7.6-4.2-19.3-4.9-28.1-2.6" stroke="white" stroke-width="3.8" stroke-linecap="round" opacity="0.9"/>
+            <path d="M44.7 50.3c-6.3-3.4-15.1-3.8-22.4-2" stroke="white" stroke-width="3.4" stroke-linecap="round" opacity="0.85"/>
+          </svg>
+          <span class="service-word">Spotify</span>
+        </a>
+
+        <a id="appleLink" class="service-link" href="#" target="_blank" rel="noopener" aria-label="Add to Apple Music">
+          <!-- Simple Apple + Music wordmark (SVG + text) -->
+          <svg class="service-icon" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M41.8 16.7c-1.8 2.2-4.6 3.9-7.4 3.7-.4-2.8 1-5.6 2.6-7.5 1.8-2.1 4.9-3.6 7.4-3.7.3 2.8-1 5.6-2.6 7.5Z" fill="white"/>
+            <path d="M52.3 46.1c-1.5 3.3-2.3 4.8-4.2 7.7-2.6 4-6.2 9-10.6 9.1-3.9.1-4.9-2.5-10.2-2.5s-6.4 2.4-10.3 2.6c-4.3.2-7.6-4.5-10.2-8.5-7.2-11.2-8-24.4-3.5-31.2 3.2-5 8.3-7.9 13-7.9 4.1 0 6.7 2.7 10.1 2.7 3.2 0 5.1-2.8 10.1-2.8 4.2 0 8.6 2.2 11.7 6-10.3 5.6-8.6 20.4 4.3 24.8Z" fill="white"/>
+          </svg>
+          <span class="service-word">Music</span>
+        </a>
+      </div>
+    </div>
+
+    <audio id="audio" preload="metadata"></audio>
   </div>
 
   <div class="toast" id="toast" aria-live="polite" aria-atomic="true"></div>
@@ -181,10 +443,14 @@
       const audio = document.getElementById('audio');
 
       const landing = document.getElementById('state-landing');
+      const loading = document.getElementById('state-loading');
       const player = document.getElementById('state-player');
 
       const playBtn = document.getElementById('playBtn');
       const toggleBtn = document.getElementById('toggleBtn');
+
+      const playIcon = document.getElementById('playIcon');
+      const pauseIcon = document.getElementById('pauseIcon');
 
       const trackTitle = document.getElementById('trackTitle');
       const trackArtist = document.getElementById('trackArtist');
@@ -207,11 +473,19 @@
       // ----------------------------
       function showLanding() {
         landing.classList.remove('hidden');
+        loading.classList.add('hidden');
+        player.classList.add('hidden');
+      }
+
+      function showLoading() {
+        landing.classList.add('hidden');
+        loading.classList.remove('hidden');
         player.classList.add('hidden');
       }
 
       function showPlayer() {
         landing.classList.add('hidden');
+        loading.classList.add('hidden');
         player.classList.remove('hidden');
       }
 
@@ -255,6 +529,18 @@
         setLink(appleLink, track?.apple_music_url || '');
       }
 
+      function setPausedUI(isPaused) {
+        if (isPaused) {
+          pauseIcon.classList.add('hidden');
+          playIcon.classList.remove('hidden');
+          toggleBtn.setAttribute('aria-label', 'Play');
+        } else {
+          playIcon.classList.add('hidden');
+          pauseIcon.classList.remove('hidden');
+          toggleBtn.setAttribute('aria-label', 'Pause');
+        }
+      }
+
       // ----------------------------
       // Tracklist parsing
       // ----------------------------
@@ -293,8 +579,6 @@
 
         tracks = (parsed.data || [])
           .map(row => {
-            // Supports your Google Sheets headers:
-            // Time, Track Title, Artist Name, Spotify URL, Apple URL
             const time = getField(row, ['start_time','time','timestamp','Time']);
             const title = getField(row, ['title','track title','Track Title','song','song title']);
             const artist = getField(row, ['artist','artist name','Artist Name','artists','artist(s)']);
@@ -313,11 +597,9 @@
           .sort((a, b) => a.start - b.start);
 
         currentTrackIndex = -1;
-        console.log(`Loaded tracks for section ${index + 1}:`, tracks.length);
       }
 
       function findTrackIndex(seconds) {
-        // tracks sorted by start; scan backwards (simple & fine for ~hundreds of tracks)
         for (let i = tracks.length - 1; i >= 0; i--) {
           if (seconds >= tracks[i].start) return i;
         }
@@ -331,13 +613,11 @@
         currentSectionIndex = index;
         currentTrackIndex = -1;
 
-        // Load tracklist first (fast) so UI can update immediately after seeking
         await loadTracklistForSection(index);
 
         audio.src = sections[index].audio;
         audio.load();
 
-        // Wait for duration/metadata so seeking works reliably
         await new Promise(resolve => {
           const onMeta = () => {
             audio.removeEventListener('loadedmetadata', onMeta);
@@ -346,11 +626,9 @@
           audio.addEventListener('loadedmetadata', onMeta);
         });
 
-        // clamp start time
         const safeStart = Math.max(0, Math.min(startAtSeconds, Math.max(0, audio.duration - 0.25)));
         audio.currentTime = safeStart;
 
-        // Update UI immediately based on currentTime
         const idx = findTrackIndex(audio.currentTime);
         if (idx >= 0) {
           currentTrackIndex = idx;
@@ -359,25 +637,22 @@
           updateTrackUI(null);
         }
 
-        if (autoplay) {
-          await audio.play();
-        }
+        if (autoplay) await audio.play();
       }
 
       async function startRandomFirstPlay() {
-        // Random section
-        const idx = Math.floor(Math.random() * sections.length);
+        showLoading();
 
-        // Set section without autoplay first, then play under user gesture, then seek to random time
+        const idx = Math.floor(Math.random() * sections.length);
         await setSection(idx, { startAtSeconds: 0, autoplay: false });
+
+        // User gesture context: play first, then seek random
         await audio.play();
 
-        // Now that it's playing, do random seek (still within user gesture context)
-        const buffer = 2; // avoid ending immediately
+        const buffer = 2;
         const max = Math.max(0, audio.duration - buffer);
         audio.currentTime = Math.random() * max;
 
-        // Update UI after seek
         const ti = findTrackIndex(audio.currentTime);
         if (ti >= 0) {
           currentTrackIndex = ti;
@@ -406,11 +681,8 @@
 
       toggleBtn.addEventListener('click', async () => {
         try {
-          if (audio.paused) {
-            await audio.play();
-          } else {
-            audio.pause();
-          }
+          if (audio.paused) await audio.play();
+          else audio.pause();
         } catch (err) {
           console.error(err);
           showToast('Playback failed. Try again.');
@@ -418,12 +690,12 @@
       });
 
       audio.addEventListener('play', () => {
-        toggleBtn.textContent = 'Pause';
+        setPausedUI(false);
         showPlayer();
       });
 
       audio.addEventListener('pause', () => {
-        toggleBtn.textContent = 'Play';
+        setPausedUI(true);
       });
 
       audio.addEventListener('timeupdate', () => {
@@ -437,7 +709,6 @@
 
       audio.addEventListener('ended', async () => {
         try {
-          // Seamless chronological playback
           const next = (currentSectionIndex + 1) % sections.length;
           await setSection(next, { startAtSeconds: 0, autoplay: true });
         } catch (err) {
@@ -451,6 +722,7 @@
       updateTrackUI(null);
       setLink(spotifyLink, '');
       setLink(appleLink, '');
+      setPausedUI(true);
     });
   </script>
 </body>
