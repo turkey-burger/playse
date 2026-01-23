@@ -84,39 +84,18 @@
         <div class="logo">playse</div>
         <button class="play-btn" id="toggleBtn">Pause</button>
 
-        <div class="track">
-          <div class="title" id="trackTitle">—</div>
-          <div class="artist" id="trackArtist">—</div>
-        </div>
+        $1
 
         <div class="actions" style="margin-top: 28px; display:flex; gap:16px; justify-content:center;">
-          <a id="spotifyLink" href="#" target="_blank" rel="noopener"
-             style="color:var(--fg); text-decoration:none; border-bottom:1px solid var(--fg); font-size:12px;">
-            Spotify
-          </a>
-          <a id="appleLink" href="#" target="_blank" rel="noopener"
-             style="color:var(--fg); text-decoration:none; border-bottom:1px solid var(--fg); font-size:12px;">
-            Apple Music
-          </a>
+          <a id="spotifyLink" href="#" target="_blank" rel="noopener" style="color:var(--fg); text-decoration:none; border-bottom:1px solid var(--fg); font-size:12px;">Spotify</a>
+          <a id="appleLink" href="#" target="_blank" rel="noopener" style="color:var(--fg); text-decoration:none; border-bottom:1px solid var(--fg); font-size:12px;">Apple Music</a>
         </div>
       </div>
 
       <audio id="audio" preload="metadata"></audio>
+    $1
 
-    </div>
-  </div>
-
-  <div id="toast"
-       style="position:fixed; left:50%; bottom:22px; transform:translateX(-50%);
-              max-width:min(520px, calc(100vw - 24px)); padding:12px 14px;
-              border:1px solid rgba(255,255,255,0.25); background:rgba(255,255,255,0.12);
-              backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
-              color:var(--fg); font-size:12px; line-height:1.4; border-radius:999px;
-              opacity:0; pointer-events:none; transition:opacity 160ms ease; text-align:center;">
-  </div>
-
-  <!-- keep your scripts below here exactly as-is -->
-</body>
+  <div id="toast" style="position:fixed; left:50%; bottom:22px; transform:translateX(-50%); max-width:min(520px, calc(100vw - 24px)); padding:12px 14px; border:1px solid rgba(255,255,255,0.25); background:rgba(255,255,255,0.12); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); color:var(--fg); font-size:12px; line-height:1.4; border-radius:999px; opacity:0; pointer-events:none; transition:opacity 160ms ease; text-align:center;"></div>
 
   <!-- CSV parser (safe, battle-tested) -->
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
@@ -165,52 +144,19 @@
     });
 
     // ----------------------------
-    // TRACKLIST (PART 1 ONLY)
+    // TRACKLIST + SECTIONS (COMMIT B)
     // ----------------------------
-    const trackTitle = document.getElementById('trackTitle');
-    const trackArtist = document.getElementById('trackArtist');
-    const spotifyLink = document.getElementById('spotifyLink');
-    const appleLink = document.getElementById('appleLink');
-    const toast = document.getElementById('toast');
 
-    const NOT_AVAILABLE_MSG = "Sorry, this song isn't available on the selected streaming service";
+    const sections = [
+      { audio: 'playse_1.mp3', tracklist: 'playse_1_tracklist.csv' },
+      { audio: 'playse_2.mp3', tracklist: 'playse_2_tracklist.csv' },
+      { audio: 'playse_3.mp3', tracklist: 'playse_3_tracklist.csv' },
+      { audio: 'playse_4.mp3', tracklist: 'playse_4_tracklist.csv' },
+      { audio: 'playse_5.mp3', tracklist: 'playse_5_tracklist.csv' },
+      { audio: 'playse_6.mp3', tracklist: 'playse_6_tracklist.csv' },
+    ];
 
-    let toastTimer = null;
-    function showToast(message) {
-      toast.textContent = message;
-      toast.style.opacity = '1';
-      if (toastTimer) clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => {
-        toast.style.opacity = '0';
-      }, 2400);
-    }
-
-    function setLink(el, url) {
-      const has = !!(url && String(url).trim());
-      if (has) {
-        el.href = url;
-        el.style.opacity = '1';
-      } else {
-        el.href = '#';
-        el.style.opacity = '0.35';
-      }
-    }
-
-    function attachUnavailableHandler(el) {
-      el.addEventListener('click', (e) => {
-        const href = el.getAttribute('href');
-        if (!href || href === '#') {
-          e.preventDefault();
-          showToast(NOT_AVAILABLE_MSG);
-        }
-      });
-    }
-
-    attachUnavailableHandler(spotifyLink);
-    attachUnavailableHandler(appleLink);
-
-    const TRACKLIST_URL = 'playse_1_tracklist.csv';
-
+    let currentSectionIndex = 0;
     let tracks = [];
     let currentTrackIndex = -1;
 
@@ -221,9 +167,10 @@
       return 0;
     }
 
-    async function loadTracklist() {
-      const res = await fetch(TRACKLIST_URL, { cache: 'no-store' });
-      if (!res.ok) throw new Error('Tracklist fetch failed');
+    async function loadTracklistForSection(index) {
+      const url = sections[index].tracklist;
+      const res = await fetch(url, { cache: 'no-store' });
+      if (!res.ok) throw new Error('Tracklist fetch failed: ' + url);
 
       const text = await res.text();
       const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
@@ -245,15 +192,16 @@
 
         return {
           start: hmsToSeconds(time),
-          title: String(title || '').trim() || '—',
-          artist: String(artist || '').trim() || '—',
+          title: String(title || '').trim(),
+          artist: String(artist || '').trim(),
           spotify_url: String(spotify || '').trim(),
           apple_music_url: String(apple || '').trim(),
         };
-      }).filter(t => t.title !== '—' || t.artist !== '—')
+      }).filter(t => t.title || t.artist)
         .sort((a, b) => a.start - b.start);
 
-      console.log('Loaded tracks:', tracks.length);
+      currentTrackIndex = -1;
+      console.log('Loaded tracks for section', index, tracks.length);
     }
 
     function findTrackIndex(seconds) {
@@ -263,19 +211,43 @@
       return -1;
     }
 
+    async function setSection(index, startAtRandom = false) {
+      currentSectionIndex = index;
+      audio.src = sections[index].audio;
+      await loadTracklistForSection(index);
+      await audio.play();
+
+      if (startAtRandom) {
+        await new Promise(r => audio.addEventListener('loadedmetadata', r, { once: true }));
+        const max = Math.max(0, audio.duration - 2);
+        audio.currentTime = Math.random() * max;
+      } else {
+        audio.currentTime = 0;
+      }
+    }
+
     audio.addEventListener('timeupdate', () => {
       if (!tracks.length) return;
       const idx = findTrackIndex(audio.currentTime);
       if (idx !== currentTrackIndex && idx >= 0) {
         currentTrackIndex = idx;
-        trackTitle.textContent = tracks[idx].title;
-        trackArtist.textContent = tracks[idx].artist;
+        trackTitle.textContent = tracks[idx].title || '—';
+        trackArtist.textContent = tracks[idx].artist || '—';
         setLink(spotifyLink, tracks[idx].spotify_url);
         setLink(appleLink, tracks[idx].apple_music_url);
       }
     });
 
-    loadTracklist().catch(err => console.error(err));
+    audio.addEventListener('ended', async () => {
+      const next = (currentSectionIndex + 1) % sections.length;
+      await setSection(next, false);
+    });
+
+    // start on random section + time
+    (async () => {
+      const idx = Math.floor(Math.random() * sections.length);
+      await setSection(idx, true);
+    })().catch(err => console.error(err));(err => console.error(err));
   </script>
 </body>
 </html>
