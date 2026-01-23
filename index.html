@@ -84,18 +84,39 @@
         <div class="logo">playse</div>
         <button class="play-btn" id="toggleBtn">Pause</button>
 
-        $1
+        <div class="track">
+          <div class="title" id="trackTitle">—</div>
+          <div class="artist" id="trackArtist">—</div>
+        </div>
 
         <div class="actions" style="margin-top: 28px; display:flex; gap:16px; justify-content:center;">
-          <a id="spotifyLink" href="#" target="_blank" rel="noopener" style="color:var(--fg); text-decoration:none; border-bottom:1px solid var(--fg); font-size:12px;">Spotify</a>
-          <a id="appleLink" href="#" target="_blank" rel="noopener" style="color:var(--fg); text-decoration:none; border-bottom:1px solid var(--fg); font-size:12px;">Apple Music</a>
+          <a id="spotifyLink" href="#" target="_blank" rel="noopener"
+             style="color:var(--fg); text-decoration:none; border-bottom:1px solid var(--fg); font-size:12px;">
+            Spotify
+          </a>
+          <a id="appleLink" href="#" target="_blank" rel="noopener"
+             style="color:var(--fg); text-decoration:none; border-bottom:1px solid var(--fg); font-size:12px;">
+            Apple Music
+          </a>
         </div>
       </div>
 
       <audio id="audio" preload="metadata"></audio>
-    $1
 
-  <div id="toast" style="position:fixed; left:50%; bottom:22px; transform:translateX(-50%); max-width:min(520px, calc(100vw - 24px)); padding:12px 14px; border:1px solid rgba(255,255,255,0.25); background:rgba(255,255,255,0.12); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); color:var(--fg); font-size:12px; line-height:1.4; border-radius:999px; opacity:0; pointer-events:none; transition:opacity 160ms ease; text-align:center;"></div>
+    </div>
+  </div>
+
+  <div id="toast"
+       style="position:fixed; left:50%; bottom:22px; transform:translateX(-50%);
+              max-width:min(520px, calc(100vw - 24px)); padding:12px 14px;
+              border:1px solid rgba(255,255,255,0.25); background:rgba(255,255,255,0.12);
+              backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+              color:var(--fg); font-size:12px; line-height:1.4; border-radius:999px;
+              opacity:0; pointer-events:none; transition:opacity 160ms ease; text-align:center;">
+  </div>
+
+  <!-- keep your scripts below here exactly as-is -->
+</body>
 
   <!-- CSV parser (safe, battle-tested) -->
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
