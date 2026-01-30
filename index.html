@@ -250,13 +250,17 @@
       .top { justify-content: center; }
 
       .logo {
-        font-size: var(--logo-size-mobile);
-        letter-spacing: var(--logo-tracking-mobile);
-      }
+        font-size: clamp(52px, 14vw, 72px);
+        letter-spacing: 0.18em;
+        white-space: nowrap;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: clip;
+  }
 
       .center {
-        transform: translateY(60px);
-        gap: 28px;
+        transform: none;
+        gap: 22px;
       }
 
       .icon-btn {
@@ -271,12 +275,12 @@
 
       .track .artist {
         font-size: var(--artist-size-mobile);
-        letter-spacing: 0.10em;
+        letter-spacing: 0.14em;
       }
 
       .bottom {
-        padding-bottom: 34px;
-        gap: 20px;
+        padding-bottom: calc(24px + env(safe-area-inset-bottom));
+        gap: 16px;
       }
 
       .library-label {
