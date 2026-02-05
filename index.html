@@ -242,7 +242,7 @@
 
     /* Mobile */
     @media (max-width: 520px) {
-  /* Default to vh; use svh when supported (better on iOS browser UI changes) */
+  /* iPhone 15 Figma reference height ~852px */
   :root {
     --y-logo: 8.215vh;     /* 70 / 852 */
     --y-btn: 47.183vh;     /* 402 / 852 */
@@ -259,14 +259,19 @@
     }
   }
 
-  .screen {
+  /* Make each state screen the positioning context */
+  #state-landing,
+  #state-loading,
+  #state-player {
     padding: 0;
     position: relative;
     min-height: 100vh;
   }
 
-  /* Centered logo */
-  .top {
+  /* Center the logo on mobile (all states) */
+  #state-landing .top,
+  #state-loading .top,
+  #state-player .top {
     position: absolute;
     left: 50%;
     top: calc(env(safe-area-inset-top) + var(--y-logo));
@@ -277,30 +282,47 @@
     pointer-events: none;
   }
 
-  .logo {
+  #state-landing .logo,
+  #state-loading .logo,
+  #state-player .logo {
     font-size: 40px;
     line-height: 56px;
     letter-spacing: 0.4em; /* Figma 40% */
     white-space: nowrap;
   }
 
-  /* Centered play/pause */
-  .center {
+  /* LANDING: play button position */
+  #state-landing #playBtn {
     position: absolute;
     left: 50%;
     top: calc(env(safe-area-inset-top) + var(--y-btn));
     transform: translateX(-50%);
-    gap: 0;
-  }
-
-  .icon-btn {
     width: 45px;
     height: 48px;
     padding: 0;
   }
 
-  /* Track text */
-  .track {
+  /* LOADING: dots position */
+  #state-loading .dots {
+    position: absolute;
+    left: 50%;
+    top: calc(env(safe-area-inset-top) + var(--y-btn));
+    transform: translateX(-50%);
+  }
+
+  /* PLAYER: pause/play button position */
+  #state-player #toggleBtn {
+    position: absolute;
+    left: 50%;
+    top: calc(env(safe-area-inset-top) + var(--y-btn));
+    transform: translateX(-50%);
+    width: 45px;
+    height: 48px;
+    padding: 0;
+  }
+
+  /* PLAYER: track title + artist position (relative to screen, not .center) */
+  #state-player .track {
     position: absolute;
     left: 50%;
     top: calc(env(safe-area-inset-top) + var(--y-track));
@@ -312,21 +334,21 @@
     gap: 24px; /* title -> artist */
   }
 
-  .track .title {
+  #state-player .track .title {
     font-size: 16px;
     line-height: 20px;
     letter-spacing: 0;
   }
 
-  .track .artist {
+  #state-player .track .artist {
     font-size: 16px;
     line-height: 20px;
     letter-spacing: 0;
     color: #b2b2b2;
   }
 
-  /* Bottom block */
-  .bottom {
+  /* PLAYER: Add to library + service icons block */
+  #state-player .bottom {
     position: absolute;
     left: 50%;
     top: calc(env(safe-area-inset-top) + var(--y-bottom));
@@ -339,7 +361,7 @@
     gap: 18px;
   }
 
-  .library-label {
+  #state-player .library-label {
     font-size: 16px;
     line-height: 20px;
     letter-spacing: 0;
@@ -347,22 +369,25 @@
     text-align: center;
   }
 
-  .services {
+  #state-player .services {
     display: flex;
     justify-content: center;
     gap: 40px;
   }
 
-  .service-icon-img {
+  #state-player .service-icon-img {
     width: 80px;
     height: 24px;
     object-fit: contain;
   }
 
+  /* Keep toast above iOS home indicator */
   .toast {
     bottom: calc(22px + env(safe-area-inset-bottom));
   }
 }
+
+
 
 
     
