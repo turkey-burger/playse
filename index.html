@@ -242,61 +242,130 @@
 
     /* Mobile */
     @media (max-width: 520px) {
-      .screen {
-        padding: var(--pad-mobile);
-        grid-template-rows: auto 1fr auto;
-      }
+  /* Use stable viewport units on iOS (svh) when available */
+  :root { --vh: 1vh; }
+  @supports (height: 1svh) { :root { --vh: 1svh; } }
 
-      .top { justify-content: center; }
+  /* Figma reference: iPhone 15 height ~852px
+     Convert your Y positions to % of height:
+       70  ->  8.215%
+       402 -> 47.183%
+       478 -> 56.103%
+       683 -> 80.164%
+       725 -> 85.093%
+  */
 
-      .logo {
-        font-size: clamp(52px, 14vw, 72px);
-        letter-spacing: 0.18em;
-        white-space: nowrap;
-        max-width: 100%;
-        overflow: hidden;
-        text-overflow: clip;
+  .screen {
+    padding: 0;
+    position: relative;
+    min-height: 100vh;
   }
 
-      .center {
-        transform: none;
-        gap: 22px;
-      }
+  /* LOGO (centered) */
+  .top {
+    position: absolute;
+    left: 50%;
+    top: calc(env(safe-area-inset-top) + (8.215 * var(--vh)));
+    transform: translateX(-50%);
+    justify-content: center;
+    width: 100%;
+    pointer-events: none;
+  }
 
-      .icon-btn {
-        width: var(--btn-size-mobile);
-        height: var(--btn-size-mobile);
-      }
+  .logo {
+    font-size: 40px;
+    line-height: 56px;
+    letter-spacing: 0.4em; /* Figma “40%” */
+    white-space: nowrap;
+  }
 
-      .track .title {
-        font-size: var(--title-size-mobile);
-        letter-spacing: 0.14em;
-      }
+  /* PLAY / PAUSE BUTTON (centered) */
+  .center {
+    position: absolute;
+    left: 50%;
+    top: calc(env(safe-area-inset-top) + (47.183 * var(--vh)));
+    transform: translateX(-50%);
+    gap: 0;
+    justify-content: flex-start;
+  }
 
-      .track .artist {
-        font-size: var(--artist-size-mobile);
-        letter-spacing: 0.14em;
-      }
+  .icon-btn {
+    width: 45px;
+    height: 48px;
+    padding: 0;
+  }
 
-      .bottom {
-        padding-bottom: calc(24px + env(safe-area-inset-bottom));
-        gap: 16px;
-      }
+  /* TRACK TEXT (centered) */
+  .track {
+    position: absolute;
+    left: 50%;
+    top: calc(env(safe-area-inset-top) + (56.103 * var(--vh)));
+    transform: translateX(-50%);
+    width: min(92vw, 360px);
+    text-align: center;
+    gap: 24px; /* title -> artist */
+  }
 
-      .library-label {
-        font-size: var(--library-label-size-mobile);
-        letter-spacing: 0.14em;
-        text-transform: lowercase;
-      }
+  .track .title {
+    font-size: 16px;
+    line-height: 20px;
+    letter-spacing: 0em;
+  }
 
-      .services { gap: 56px; }
+  .track .artist {
+    font-size: 16px;
+    line-height: 20px;
+    letter-spacing: 0em;
+    color: #b2b2b2;
+  }
 
-      /* Mobile music service icon frames are 100x44 */
-      .service-icon-img {
-        width: 100px;
-        height: 44px;
-      }
+  /* ADD TO LIBRARY + ICON ROW (centered) */
+  .bottom {
+    position: absolute;
+    left: 50%;
+    top: calc(env(safe-area-inset-top) + (80.164 * var(--vh)));
+    transform: translateX(-50%);
+    width: min(92vw, 360px);
+    padding: 0;
+    gap: 18px; /* label -> icons */
+    justify-content: flex-start;
+    align-items: center;
+  }
+
+  .library-label {
+    font-size: 16px;
+    line-height: 20px;
+    letter-spacing: 0em;
+    text-transform: lowercase;
+    text-align: center;
+  }
+
+  .services {
+    justify-content: center;
+    gap: 40px;
+  }
+
+  /* Mobile service icons from your spec */
+  .service-icon-img {
+    width: 80px;
+    height: 24px;
+    object-fit: contain;
+  }
+
+  /* Extra safety for very short screens: keep bottom away from home indicator */
+  @media (max-height: 740px) {
+    .bottom {
+      top: calc(env(safe-area-inset-top) + (76 * var(--vh)));
     }
+  }
+
+  /* Ensure toast doesn't collide with bottom safe area */
+  .toast {
+    bottom: calc(22px + env(safe-area-inset-bottom));
+  }
+}
+
+    
   </style>
 </head>
 
