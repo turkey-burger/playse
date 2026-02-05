@@ -242,18 +242,22 @@
 
     /* Mobile */
     @media (max-width: 520px) {
-  /* Use stable viewport units on iOS (svh) when available */
-  :root { --vh: 1vh; }
-  @supports (height: 1svh) { :root { --vh: 1svh; } }
+  /* Default to vh; use svh when supported (better on iOS browser UI changes) */
+  :root {
+    --y-logo: 8.215vh;     /* 70 / 852 */
+    --y-btn: 47.183vh;     /* 402 / 852 */
+    --y-track: 56.103vh;   /* 478 / 852 */
+    --y-bottom: 80.164vh;  /* 683 / 852 */
+  }
 
-  /* Figma reference: iPhone 15 height ~852px
-     Convert your Y positions to % of height:
-       70  ->  8.215%
-       402 -> 47.183%
-       478 -> 56.103%
-       683 -> 80.164%
-       725 -> 85.093%
-  */
+  @supports (height: 1svh) {
+    :root {
+      --y-logo: 8.215svh;
+      --y-btn: 47.183svh;
+      --y-track: 56.103svh;
+      --y-bottom: 80.164svh;
+    }
+  }
 
   .screen {
     padding: 0;
@@ -261,32 +265,32 @@
     min-height: 100vh;
   }
 
-  /* LOGO (centered) */
+  /* Centered logo */
   .top {
     position: absolute;
     left: 50%;
-    top: calc(env(safe-area-inset-top) + (8.215 * var(--vh)));
+    top: calc(env(safe-area-inset-top) + var(--y-logo));
     transform: translateX(-50%);
-    justify-content: center;
     width: 100%;
+    display: flex;
+    justify-content: center;
     pointer-events: none;
   }
 
   .logo {
     font-size: 40px;
     line-height: 56px;
-    letter-spacing: 0.4em; /* Figma “40%” */
+    letter-spacing: 0.4em; /* Figma 40% */
     white-space: nowrap;
   }
 
-  /* PLAY / PAUSE BUTTON (centered) */
+  /* Centered play/pause */
   .center {
     position: absolute;
     left: 50%;
-    top: calc(env(safe-area-inset-top) + (47.183 * var(--vh)));
+    top: calc(env(safe-area-inset-top) + var(--y-btn));
     transform: translateX(-50%);
     gap: 0;
-    justify-content: flex-start;
   }
 
   .icon-btn {
@@ -295,75 +299,71 @@
     padding: 0;
   }
 
-  /* TRACK TEXT (centered) */
+  /* Track text */
   .track {
     position: absolute;
     left: 50%;
-    top: calc(env(safe-area-inset-top) + (56.103 * var(--vh)));
+    top: calc(env(safe-area-inset-top) + var(--y-track));
     transform: translateX(-50%);
     width: min(92vw, 360px);
     text-align: center;
+    display: flex;
+    flex-direction: column;
     gap: 24px; /* title -> artist */
   }
 
   .track .title {
     font-size: 16px;
     line-height: 20px;
-    letter-spacing: 0em;
+    letter-spacing: 0;
   }
 
   .track .artist {
     font-size: 16px;
     line-height: 20px;
-    letter-spacing: 0em;
+    letter-spacing: 0;
     color: #b2b2b2;
   }
 
-  /* ADD TO LIBRARY + ICON ROW (centered) */
+  /* Bottom block */
   .bottom {
     position: absolute;
     left: 50%;
-    top: calc(env(safe-area-inset-top) + (80.164 * var(--vh)));
+    top: calc(env(safe-area-inset-top) + var(--y-bottom));
     transform: translateX(-50%);
     width: min(92vw, 360px);
     padding: 0;
-    gap: 18px; /* label -> icons */
-    justify-content: flex-start;
+    display: flex;
+    flex-direction: column;
     align-items: center;
+    gap: 18px;
   }
 
   .library-label {
     font-size: 16px;
     line-height: 20px;
-    letter-spacing: 0em;
+    letter-spacing: 0;
     text-transform: lowercase;
     text-align: center;
   }
 
   .services {
+    display: flex;
     justify-content: center;
     gap: 40px;
   }
 
-  /* Mobile service icons from your spec */
   .service-icon-img {
     width: 80px;
     height: 24px;
     object-fit: contain;
   }
 
-  /* Extra safety for very short screens: keep bottom away from home indicator */
-  @media (max-height: 740px) {
-    .bottom {
-      top: calc(env(safe-area-inset-top) + (76 * var(--vh)));
-    }
-  }
-
-  /* Ensure toast doesn't collide with bottom safe area */
   .toast {
     bottom: calc(22px + env(safe-area-inset-bottom));
   }
 }
+
 
     
   </style>
