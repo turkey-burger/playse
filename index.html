@@ -45,16 +45,21 @@
       --logo-tracking-desktop: 0.55em;
       --logo-tracking-mobile: 0.28em;
 
-      --btn-size-desktop: 92px;
+      --btn-size-desktop: 88px;
       --btn-size-mobile: 88px;
 
-      --title-size-desktop: 22px;
-      --artist-size-desktop: 20px;
+      --title-size-desktop: 20px;
+      --artist-size-desktop: 18px;
       --title-size-mobile: 26px;
       --artist-size-mobile: 22px;
 
-      --library-label-size-desktop: 22px;
+      --library-label-size-desktop: 20px;
       --library-label-size-mobile: 28px;
+      
+      --service-icon-height-desktop: 28px;
+      --service-icon-height-mobile: 24px;
+      --service-gap-desktop: 64px;
+      --service-gap-mobile: 40px;
 
       --toast-bg: rgba(255,255,255,0.14);
       --toast-border: rgba(255,255,255,0.28);
@@ -91,7 +96,7 @@
     .top {
       display: flex;
       align-items: flex-start;
-      justify-content: flex-start;
+      justify-content: center;
     }
 
     .logo {
@@ -257,6 +262,12 @@
       --y-track: 59.0svh;
       --y-bottom: 80.164svh;
     }
+  }
+
+  :root {
+    --btn-size-desktop: var(--btn-size-mobile);
+    --service-icon-height-desktop: var(--service-icon-height-mobile);
+    --service-gap-desktop: var(--service-gap-mobile);
   }
 
   /* Make each state screen the positioning context */
