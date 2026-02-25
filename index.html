@@ -557,6 +557,10 @@
       let tracks = [];
       let currentTrackIndex = -1;
       let toastTimer = null;
+      let expectedTime = 0;
+      let lastStableTime = 0;
+      let seekFromTime = 0;
+      let isSnappingBack = false;
 
       function showLanding() {
         landing.classList.remove('hidden');
@@ -614,6 +618,7 @@
         trackArtist.textContent = track?.artist?.trim() || '—';
         setLink(spotifyLink, track?.spotify_url || '');
         setLink(appleLink, track?.apple_music_url || '');
+        updateMediaMetadata(track);
       }
 
       function setPausedUI(isPaused) {
@@ -626,6 +631,35 @@
           pauseIcon.classList.remove('hidden');
           toggleBtn.setAttribute('aria-label', 'Pause');
         }
+      }
+
+      function setupMediaSession() {
+        if (!('mediaSession' in navigator)) return;
+
+        // Keep play/pause working
+        navigator.mediaSession.setActionHandler('play', () => audio.play());
+        navigator.mediaSession.setActionHandler('pause', () => audio.pause());
+
+        // Disable skip + seeking controls (greyed out / disabled where supported)
+        navigator.mediaSession.setActionHandler('seekto', null);
+        navigator.mediaSession.setActionHandler('seekbackward', null);
+        navigator.mediaSession.setActionHandler('seekforward', null);
+        navigator.mediaSession.setActionHandler('previoustrack', null);
+        navigator.mediaSession.setActionHandler('nexttrack', null);
+      }
+
+      function updateMediaMetadata(track) {
+        if (!('mediaSession' in navigator)) return;
+
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: track?.title?.trim() || 'playse',
+          artist: track?.artist?.trim() || '',
+          album: 'playse',
+          artwork: [
+            // Add ?v=1 to bust iOS caching when you update the image later
+            { src: 'lockscreen-art.png?v=1', sizes: '512x512', type: 'image/png' },
+          ],
+        });
       }
 
       function hmsToSeconds(hms) {
@@ -773,6 +807,13 @@
 
       audio.addEventListener('timeupdate', () => {
         if (!tracks.length) return;
+
+        // Track a stable time reference for snapback (when user scrubs)
+        if (!audio.seeking && !isSnappingBack) {
+          expectedTime = audio.currentTime;
+          lastStableTime = audio.currentTime;
+        }
+
         const idx = findTrackIndex(audio.currentTime);
         if (idx !== currentTrackIndex && idx >= 0) {
           currentTrackIndex = idx;
@@ -790,6 +831,31 @@
         }
       });
 
+      audio.addEventListener('seeking', () => {
+        // If the user tries to scrub, remember where we were *supposed* to be
+        if (isSnappingBack) return;
+        seekFromTime = lastStableTime || expectedTime || audio.currentTime || 0;
+      });
+
+      audio.addEventListener('seeked', () => {
+        if (isSnappingBack) return;
+
+        const to = audio.currentTime;
+        const from = seekFromTime;
+
+        // Allow tiny accidental moves (finger slips) but block real scrubs
+        const delta = Math.abs(to - from);
+        const SCRUB_TOLERANCE_SECONDS = 1.5;
+
+        if (delta > SCRUB_TOLERANCE_SECONDS) {
+          isSnappingBack = true;
+          audio.currentTime = from;
+          // Release the guard shortly after the snapback to avoid loops
+          setTimeout(() => { isSnappingBack = false; }, 120);
+        }
+      });
+
+      setupMediaSession();
       showLanding();
       updateTrackUI(null);
       setLink(spotifyLink, '');
