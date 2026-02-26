@@ -562,6 +562,7 @@
       let seekFromTime = 0;
       let isSnappingBack = false;
       let isProgrammaticSeek = false;
+      let isSwitchingSection = false;
 
       function showLanding() {
         landing.classList.remove('hidden');
@@ -722,6 +723,12 @@
       }
 
       async function setSection(index, { startAtSeconds = 0, autoplay = false } = {}) {
+          isSwitchingSection = true;
+          isSnappingBack = false;
+          expectedTime = 0;
+          lastStableTime = 0;
+          seekFromTime = 0;
+        
         currentSectionIndex = index;
         currentTrackIndex = -1;
 
@@ -739,7 +746,6 @@
         });
 
         const safeStart = Math.max(0, Math.min(startAtSeconds, Math.max(0, audio.duration - 0.25)));
-        isProgrammaticSeek = true;
         audio.currentTime = safeStart;
         setTimeout(() => { isProgrammaticSeek = false; }, 0);
 
@@ -751,7 +757,20 @@
           updateTrackUI(null);
         }
 
-        if (autoplay) await audio.play();
+        if (autoplay) {
+          await audio.play();
+
+          // Wait until the new source is actually playing, then re-enable anti-scrub
+          await new Promise(resolve => {
+            const onPlaying = () => {
+              audio.removeEventListener('playing', onPlaying);
+              resolve();
+            };
+            audio.addEventListener('playing', onPlaying, { once: true });
+          });
+        }
+
+        isSwitchingSection = false;
       }
 
       async function startRandomFirstPlay() {
@@ -838,13 +857,13 @@
 
       audio.addEventListener('seeking', () => {
         // If the user tries to scrub, remember where we were *supposed* to be
-        if (isProgrammaticSeek) return;
+        if (isSwitchingSection) return;
         if (isSnappingBack) return;
         seekFromTime = lastStableTime || expectedTime || audio.currentTime || 0;
       });
 
       audio.addEventListener('seeked', () => {
-        if (isProgrammaticSeek) return;
+        if (isSwitchingSection) return;
         if (isSnappingBack) return;
 
         const to = audio.currentTime;
