@@ -143,7 +143,8 @@
       top: var(--pad-desktop);
       right: min(64px, 6vw);
       opacity: 0.55;
-      animation: ghostFade 1400ms ease forwards;
+      animation: ghostFade 1200ms ease forwards;
+      animation-delay: 120ms;
     }
 
     @keyframes ghostFade{
@@ -666,7 +667,7 @@
       document.body.classList.add('logo-intro-running');
 
       // Total time = last delay (14*70=980ms) + duration (~560ms) ≈ 1540ms
-      const TOTAL_MS = 1600;
+      const TOTAL_MS = 1150;
 
       setTimeout(() => {
         wrap.classList.add('fade-out');
@@ -1016,25 +1017,17 @@
   </script>
 
  <div id="logoIntroWrap" class="logo-intro-wrap" aria-hidden="true">
-  <!-- ghost word on the right, like the reference -->
+  <!-- ghost word on the right -->
   <div class="logo-intro-ghost">playse</div>
 
   <!-- main animated text -->
   <div class="logo-intro-main">
-    <span class="ch" style="--i:0;  --dx:-120px; --dy:-18px; --r:-10deg;">p</span>
-    <span class="ch" style="--i:1;  --dx:90px;   --dy:12px;  --r:8deg;">l</span>
-    <span class="ch" style="--i:2;  --dx:-60px;  --dy:26px;  --r:-6deg;">a</span>
-    <span class="ch" style="--i:3;  --dx:130px;  --dy:-22px; --r:12deg;">y</span>
-    <span class="ch" style="--i:4;  --dx:-90px;  --dy:-30px; --r:14deg;">s</span>
-    <span class="ch" style="--i:5;  --dx:70px;   --dy:30px;  --r:-12deg;">e</span>
-
-    <span class="ch ch2" style="--i:8;  --dx:-140px; --dy:0px;   --r:0deg;">.</span>
-    <span class="ch ch2" style="--i:9;  --dx:-160px; --dy:-10px; --r:0deg;">s</span>
-    <span class="ch ch2" style="--i:10; --dx:-120px; --dy:14px;  --r:0deg;">t</span>
-    <span class="ch ch2" style="--i:11; --dx:-90px;  --dy:-18px; --r:0deg;">r</span>
-    <span class="ch ch2" style="--i:12; --dx:-60px;  --dy:12px;  --r:0deg;">e</span>
-    <span class="ch ch2" style="--i:13; --dx:-30px;  --dy:-10px; --r:0deg;">a</span>
-    <span class="ch ch2" style="--i:14; --dx:20px;   --dy:10px;  --r:0deg;">m</span>
+    <span class="ch" style="--i:0; --dx:-120px; --dy:-18px; --r:-10deg;">p</span>
+    <span class="ch" style="--i:1; --dx:90px;   --dy:12px;  --r:8deg;">l</span>
+    <span class="ch" style="--i:2; --dx:-60px;  --dy:26px;  --r:-6deg;">a</span>
+    <span class="ch" style="--i:3; --dx:130px;  --dy:-22px; --r:12deg;">y</span>
+    <span class="ch" style="--i:4; --dx:-90px;  --dy:-30px; --r:14deg;">s</span>
+    <span class="ch" style="--i:5; --dx:70px;   --dy:30px;  --r:-12deg;">e</span>
   </div>
 </div>
 
