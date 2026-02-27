@@ -127,6 +127,7 @@
       font-weight: 300;
       font-size: var(--logo-size-desktop);
       letter-spacing: var(--logo-tracking-desktop);
+      --intro-gap: var(--logo-tracking-desktop);
       line-height: 1;
       text-transform: lowercase;
       white-space: nowrap;
@@ -138,11 +139,10 @@
     /* main letters fly in + settle */
     .logo-intro-main{
       position: relative;
-      font: inherit;
-      letter-spacing: inherit;
-      text-transform: inherit;
-      white-space: inherit;
+      display: inline-flex;
+      column-gap: var(--intro-gap);
       line-height: inherit;
+      white-space: inherit;
     }
   
 
@@ -153,6 +153,10 @@
       filter: blur(10px);
       animation: chIn 680ms cubic-bezier(.16,.86,.22,1) forwards;
       animation-delay: calc(var(--i) * 70ms);
+    }
+
+    .logo-intro-main .ch:last-child {
+      margin-right: 0;
     }
     
 
@@ -187,6 +191,7 @@
         font-size: var(--logo-font-mobile);
         line-height: var(--logo-line-mobile);
         letter-spacing: var(--logo-track-mobile);
+        --intro-gap: var(--logo-track-mobile);
       }
     }
 
