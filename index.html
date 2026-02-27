@@ -111,53 +111,68 @@
       line-height: 1;
       text-transform: lowercase;
     }
-
     
-    /* Logo intro animation (plays once, then reveals static logo) */
-    .logo {
-      position: relative;
-      display: inline-block;
-    }
-
-    .logo-static {
-      opacity: 0;               /* hidden until animation completes */
-      transition: opacity 180ms ease;
-    }
-
-    .logo-anim {
-      position: absolute;
-      inset: 0;
-      display: inline-flex;
-      align-items: baseline;
-      justify-content: center;
+    /* ===== Logo intro overlay (plays once) ===== */
+    .logo-intro {
+      position: fixed;
+      left: 50%;
+      top: var(--pad-desktop);
+      transform: translateX(-50%);
+      z-index: 9999;
       pointer-events: none;
+      opacity: 1;
+
+      /* match your logo styling */
+      color: var(--fg);
+      font-family: "ABCDiatypeMono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-weight: 300;
+      font-size: var(--logo-size-desktop);
+      letter-spacing: var(--logo-tracking-desktop);
+      line-height: 1;
+      text-transform: lowercase;
+      white-space: nowrap;
     }
 
-    .logo-anim > span {
+    .logo-intro .li {
       display: inline-block;
       opacity: 0;
-      transform: translateY(-6px) scale(0.98);
-      filter: blur(6px);
-      animation: logoIn 700ms cubic-bezier(.2,.9,.2,1) forwards;
+      transform: translate(var(--dx), var(--dy)) rotate(var(--r)) scale(0.98);
+      filter: blur(10px);
+      animation: logoFall 680ms cubic-bezier(.16,.86,.22,1) forwards;
       animation-delay: calc(var(--i) * 70ms);
     }
 
-    /* A little “settle” feel */
-    @keyframes logoIn {
-      0%   { opacity: 0; transform: translateY(-10px) scale(0.96); filter: blur(8px); }
-      60%  { opacity: 1; transform: translateY(2px)  scale(1.02); filter: blur(1px); }
-      100% { opacity: 1; transform: translateY(0)    scale(1);    filter: blur(0); }
+    @keyframes logoFall {
+      0% {
+        opacity: 0;
+        transform: translate(var(--dx), var(--dy)) rotate(var(--r)) scale(0.98);
+        filter: blur(10px);
+      }
+      65% {
+        opacity: 1;
+        transform: translate(0px, 2px) rotate(0deg) scale(1.02);
+        filter: blur(1px);
+      }
+      100% {
+        opacity: 1;
+        transform: translate(0px, 0px) rotate(0deg) scale(1);
+        filter: blur(0px);
+      }
     }
 
-    /* When animation is done */
-    .logo.logo-done .logo-static { opacity: 1; }
-    .logo.logo-done .logo-anim   { display: none; }
+    /* Mobile: match your mobile logo position + sizing */
+    @media (max-width: 520px) {
+      .logo-intro {
+        top: calc(env(safe-area-inset-top) + var(--y-logo));
+        font-size: 40px;
+        line-height: 56px;
+        letter-spacing: 0.4em;
+      }
+    }
 
-    /* Respect reduced motion */
+    /* Reduced motion: skip the overlay */
     @media (prefers-reduced-motion: reduce) {
-      .logo-static { opacity: 1; }
-      .logo-anim { display: none; }
-      .logo-anim > span { animation: none; }
+      .logo-intro { display: none; }
     }
 
     .center {
@@ -472,19 +487,7 @@
 <body class="noselect">
   <!-- LANDING -->
   <div id="state-landing" class="screen">
-    <div class="top"><div class="logo" aria-label="playse">
-                     <span class="logo-static">playse</span>
-
-                     <!-- one-time intro animation -->
-                     <span class="logo-anim" aria-hidden="true">
-                        <span style="--i:0">p</span>
-                        <span style="--i:1">l</span>
-                        <span style="--i:2">a</span>
-                        <span style="--i:3">y</span>
-                        <span style="--i:4">s</span>
-                        <span style="--i:5">e</span>
-                     </span>
-</div></div>
+    <div class="top"><div class="logo" aria-label="playse">playse</div></div>
     <div class="center">
       <button class="icon-btn" id="playBtn" aria-label="Play">
         <picture>
@@ -498,18 +501,7 @@
 
   <!-- LOADING -->
   <div id="state-loading" class="screen hidden">
-    <div class="top"><div class="logo" aria-label="playse">
-                     <span class="logo-static">playse</span>
-
-                     <!-- one-time intro animation -->
-                     <span class="logo-anim" aria-hidden="true">
-                        <span style="--i:0">p</span>
-                        <span style="--i:1">l</span>
-                        <span style="--i:2">a</span>
-                        <span style="--i:3">y</span>
-                        <span style="--i:4">s</span>
-                        <span style="--i:5">e</span>
-                     </span></div>
+    <div class="top"><div class="logo" aria-label="playse">playse</div></div>
     <div class="center" aria-label="Loading">
       <div class="dots" aria-hidden="true">
         <div class="dot"></div>
@@ -522,18 +514,7 @@
 
   <!-- PLAYER -->
   <div id="state-player" class="screen hidden">
-    <div class="top"><div class="logo" aria-label="playse">
-                     <span class="logo-static">playse</span>
-
-                     <!-- one-time intro animation -->
-                     <span class="logo-anim" aria-hidden="true">
-                        <span style="--i:0">p</span>
-                        <span style="--i:1">l</span>
-                        <span style="--i:2">a</span>
-                        <span style="--i:3">y</span>
-                        <span style="--i:4">s</span>
-                        <span style="--i:5">e</span>
-                     </span></div>
+    <div class="top"><div class="logo" aria-label="playse">playse</div></div>
 
     <div class="center">
       <button class="icon-btn" id="toggleBtn" aria-label="Pause">
@@ -582,11 +563,6 @@
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const AUDIO_BASE = 'https://pub-711bcf5604184f5580b7ad5cf4df3511.r2.dev';
-      // Play logo intro animation once per page load, then show the normal static logo
-      const logos = document.querySelectorAll('.logo');
-      setTimeout(() => {
-        logos.forEach(l => l.classList.add('logo-done'));
-      }, 900); // should be a bit longer than the last letter delay + animation
       const sections = [
         { audio: `${AUDIO_BASE}/playse_1.mp3`, tracklist: 'playse_1_tracklist.csv' },
         { audio: `${AUDIO_BASE}/playse_2.mp3`, tracklist: 'playse_2_tracklist.csv' },
@@ -615,7 +591,7 @@
         { audio: `${AUDIO_BASE}/playse_25.mp3`, tracklist: 'playse_25_tracklist.csv' },
         { audio: `${AUDIO_BASE}/playse_26.mp3`, tracklist: 'playse_26_tracklist.csv' },
         { audio: `${AUDIO_BASE}/playse_27.mp3`, tracklist: 'playse_27_tracklist.csv' },
-      
+        
       ];
 
       const NOT_AVAILABLE_MSG = "Sorry, this song isn't available on the selected streaming service";
@@ -638,6 +614,12 @@
       const appleLink = document.getElementById('appleLink');
 
       const toast = document.getElementById('toast');
+
+      // One-time logo intro overlay cleanup
+      setTimeout(() => {
+        const intro = document.getElementById('logoIntro');
+        if (intro) intro.remove();
+      }, 1100);
 
       let started = false;
       let currentSectionIndex = 0;
@@ -857,7 +839,7 @@
           });
         }
 
-        isSwitchingSection = false;
+      isSwitchingSection = false;
       }
 
       async function startRandomFirstPlay() {
@@ -976,5 +958,15 @@
       setPausedUI(true);
     });
   </script>
+
+  <div id="logoIntro" class="logo-intro" aria-hidden="true">
+  <span class="li" style="--i:0; --dx:-60px; --dy:-18px; --r:-6deg;">p</span>
+  <span class="li" style="--i:1; --dx:-35px; --dy:22px;  --r:7deg;">l</span>
+  <span class="li" style="--i:2; --dx:20px;  --dy:-26px; --r:-10deg;">a</span>
+  <span class="li" style="--i:3; --dx:50px;  --dy:18px;  --r:6deg;">y</span>
+  <span class="li" style="--i:4; --dx:-18px; --dy:-34px; --r:12deg;">s</span>
+  <span class="li" style="--i:5; --dx:38px;  --dy:-10px; --r:-8deg;">e</span>
+</div>
+
 </body>
 </html>
