@@ -97,6 +97,30 @@
       padding: var(--pad-desktop);
     }
 
+    /* iOS Safari viewport fix: extend behind the bottom bar */
+    html, body {
+      height: 100%;
+    }
+
+    /* Default fallback */
+    .screen {
+      min-height: 100vh;
+    }
+
+    /* Prefer the “small viewport height” on iOS (stable, includes browser UI behavior) */
+    @supports (height: 100svh) {
+      .screen {
+        min-height: 100svh;
+      }
+    }
+
+    /* Optional: if supported, dynamic viewport height can also work well */
+    @supports (height: 100dvh) {
+      .screen {
+        min-height: 100dvh;
+      }
+    }
+
     .hidden { display: none !important; }
 
     .top {
