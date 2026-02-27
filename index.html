@@ -111,18 +111,22 @@
       line-height: 1;
       text-transform: lowercase;
     }
-    
-    /* ===== Logo intro overlay (plays once) ===== */
-    .logo-intro {
+
+    /* ===== One-time logo intro overlay (matches reference vibe) ===== */
+    .logo-intro-wrap{
       position: fixed;
-      left: 50%;
-      top: var(--pad-desktop);
-      transform: translateX(-50%);
+      inset: 0;
       z-index: 9999;
       pointer-events: none;
-      opacity: 1;
 
-      /* match your logo styling */
+      display: grid;
+      justify-items: center;
+      align-content: start;
+      padding-top: var(--pad-desktop);
+    }
+
+    .logo-intro-main,
+    .logo-intro-ghost{
       color: var(--fg);
       font-family: "ABCDiatypeMono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
       font-weight: 300;
@@ -133,46 +137,80 @@
       white-space: nowrap;
     }
 
-    .logo-intro .li {
+    /* ghost copy on the right that fades (like the reference) */
+    .logo-intro-ghost{
+      position: absolute;
+      top: var(--pad-desktop);
+      right: min(64px, 6vw);
+      opacity: 0.55;
+      animation: ghostFade 1400ms ease forwards;
+    }
+
+    @keyframes ghostFade{
+      0%   { opacity: 0.0; transform: translateX(12px); filter: blur(2px); }
+      25%  { opacity: 0.55; transform: translateX(0);   filter: blur(0); }
+      100% { opacity: 0.0; transform: translateX(-10px); filter: blur(2px); }
+    }
+
+    /* main letters fly in + settle */
+    .logo-intro-main{
+      position: relative;
+    }
+
+    .logo-intro-main .ch{
       display: inline-block;
       opacity: 0;
       transform: translate(var(--dx), var(--dy)) rotate(var(--r)) scale(0.98);
       filter: blur(10px);
-      animation: logoFall 680ms cubic-bezier(.16,.86,.22,1) forwards;
+      animation: chIn 680ms cubic-bezier(.16,.86,.22,1) forwards;
       animation-delay: calc(var(--i) * 70ms);
     }
 
-    @keyframes logoFall {
-      0% {
+    /* second phase letters (.stream) feel slightly snappier */
+    .logo-intro-main .ch2{
+      animation-duration: 560ms;
+      filter: blur(8px);
+    }
+
+    @keyframes chIn{
+      0%{
         opacity: 0;
         transform: translate(var(--dx), var(--dy)) rotate(var(--r)) scale(0.98);
         filter: blur(10px);
       }
-      65% {
+      62%{
         opacity: 1;
         transform: translate(0px, 2px) rotate(0deg) scale(1.02);
         filter: blur(1px);
       }
-      100% {
+      100%{
         opacity: 1;
         transform: translate(0px, 0px) rotate(0deg) scale(1);
         filter: blur(0px);
       }
     }
 
-    /* Mobile: match your mobile logo position + sizing */
-    @media (max-width: 520px) {
-      .logo-intro {
-        top: calc(env(safe-area-inset-top) + var(--y-logo));
-        font-size: 40px;
-        line-height: 56px;
-        letter-spacing: 0.4em;
-      }
+    /* Fade overlay out at the end */
+    .logo-intro-wrap.fade-out{
+      opacity: 0;
+      transition: opacity 240ms ease;
     }
 
-    /* Reduced motion: skip the overlay */
-    @media (prefers-reduced-motion: reduce) {
-      .logo-intro { display: none; }
+    /* Mobile positioning: match your logo anchor */
+    @media (max-width: 520px){
+      .logo-intro-wrap{ padding-top: calc(env(safe-area-inset-top) + var(--y-logo)); }
+      .logo-intro-ghost{ top: calc(env(safe-area-inset-top) + var(--y-logo)); }
+    }
+
+    /* Hide your real logo while intro runs (this fixes the "overlay on top" issue) */
+    body.logo-intro-running .logo{
+      opacity: 0;
+    }
+
+    /* Reduced motion: skip intro */
+    @media (prefers-reduced-motion: reduce){
+      #logoIntroWrap{ display:none; }
+      body.logo-intro-running .logo{ opacity: 1; }
     }
 
     .center {
@@ -615,11 +653,29 @@
 
       const toast = document.getElementById('toast');
 
-      // One-time logo intro overlay cleanup
+      // One-time logo intro: hide real logo, play overlay, then reveal logo and remove overlay
+      (() => {
+      const wrap = document.getElementById('logoIntroWrap');
+      if (!wrap) return;
+
+      if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        wrap.remove();
+        return;
+      }
+
+      document.body.classList.add('logo-intro-running');
+
+      // Total time = last delay (14*70=980ms) + duration (~560ms) ≈ 1540ms
+      const TOTAL_MS = 1600;
+
       setTimeout(() => {
-        const intro = document.getElementById('logoIntro');
-        if (intro) intro.remove();
-      }, 1100);
+        wrap.classList.add('fade-out');
+        setTimeout(() => {
+          wrap.remove();
+          document.body.classList.remove('logo-intro-running');
+        }, 260);
+      }, TOTAL_MS);
+      })();
 
       let started = false;
       let currentSectionIndex = 0;
@@ -959,13 +1015,27 @@
     });
   </script>
 
-  <div id="logoIntro" class="logo-intro" aria-hidden="true">
-  <span class="li" style="--i:0; --dx:-60px; --dy:-18px; --r:-6deg;">p</span>
-  <span class="li" style="--i:1; --dx:-35px; --dy:22px;  --r:7deg;">l</span>
-  <span class="li" style="--i:2; --dx:20px;  --dy:-26px; --r:-10deg;">a</span>
-  <span class="li" style="--i:3; --dx:50px;  --dy:18px;  --r:6deg;">y</span>
-  <span class="li" style="--i:4; --dx:-18px; --dy:-34px; --r:12deg;">s</span>
-  <span class="li" style="--i:5; --dx:38px;  --dy:-10px; --r:-8deg;">e</span>
+ <div id="logoIntroWrap" class="logo-intro-wrap" aria-hidden="true">
+  <!-- ghost word on the right, like the reference -->
+  <div class="logo-intro-ghost">playse</div>
+
+  <!-- main animated text -->
+  <div class="logo-intro-main">
+    <span class="ch" style="--i:0;  --dx:-120px; --dy:-18px; --r:-10deg;">p</span>
+    <span class="ch" style="--i:1;  --dx:90px;   --dy:12px;  --r:8deg;">l</span>
+    <span class="ch" style="--i:2;  --dx:-60px;  --dy:26px;  --r:-6deg;">a</span>
+    <span class="ch" style="--i:3;  --dx:130px;  --dy:-22px; --r:12deg;">y</span>
+    <span class="ch" style="--i:4;  --dx:-90px;  --dy:-30px; --r:14deg;">s</span>
+    <span class="ch" style="--i:5;  --dx:70px;   --dy:30px;  --r:-12deg;">e</span>
+
+    <span class="ch ch2" style="--i:8;  --dx:-140px; --dy:0px;   --r:0deg;">.</span>
+    <span class="ch ch2" style="--i:9;  --dx:-160px; --dy:-10px; --r:0deg;">s</span>
+    <span class="ch ch2" style="--i:10; --dx:-120px; --dy:14px;  --r:0deg;">t</span>
+    <span class="ch ch2" style="--i:11; --dx:-90px;  --dy:-18px; --r:0deg;">r</span>
+    <span class="ch ch2" style="--i:12; --dx:-60px;  --dy:12px;  --r:0deg;">e</span>
+    <span class="ch ch2" style="--i:13; --dx:-30px;  --dy:-10px; --r:0deg;">a</span>
+    <span class="ch ch2" style="--i:14; --dx:20px;   --dy:10px;  --r:0deg;">m</span>
+  </div>
 </div>
 
 </body>
