@@ -122,15 +122,29 @@
       display: grid;
       justify-items: center;
       align-content: start;
+      
+      font-family: "ABCDiatypeMono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-weight: 300;
+      font-size: var(--logo-size-desktop);
+      letter-spacing: var(--logo-tracking-desktop);
+      line-height: 1;
+      text-transform: lowercase;
+      white-space: nowrap;
+
       padding-top: var(--pad-desktop);
     }
 
-    .logo-intro-main,
  
     /* main letters fly in + settle */
     .logo-intro-main{
       position: relative;
+      font: inherit;
+      letter-spacing: inherit;
+      text-transform: inherit;
+      white-space: inherit;
+      line-height: inherit;
     }
+  
 
     .logo-intro-main .ch{
       display: inline-block;
@@ -172,9 +186,13 @@
     }
 
     /* Mobile positioning: match your logo anchor */
-    @media (max-width: 520px){
-      .logo-intro-wrap{ padding-top: calc(env(safe-area-inset-top) + var(--y-logo)); }
-      .logo-intro-ghost{ top: calc(env(safe-area-inset-top) + var(--y-logo)); }
+    @media (max-width: 520px) {
+      .logo-intro-wrap {
+        padding-top: calc(env(safe-area-inset-top) + var(--y-logo));
+        font-size: 40px;            /* match your mobile .logo rule */
+        letter-spacing: 0.4em;      /* match your mobile .logo rule */
+        line-height: 56px;
+      }
     }
 
     /* Hide your real logo while intro runs (this fixes the "overlay on top" issue) */
