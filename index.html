@@ -126,33 +126,7 @@
     }
 
     .logo-intro-main,
-    .logo-intro-ghost{
-      color: var(--fg);
-      font-family: "ABCDiatypeMono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      font-weight: 300;
-      font-size: var(--logo-size-desktop);
-      letter-spacing: var(--logo-tracking-desktop);
-      line-height: 1;
-      text-transform: lowercase;
-      white-space: nowrap;
-    }
-
-    /* ghost copy on the right that fades (like the reference) */
-    .logo-intro-ghost{
-      position: absolute;
-      top: var(--pad-desktop);
-      right: min(64px, 6vw);
-      opacity: 0.55;
-      animation: ghostFade 1200ms ease forwards;
-      animation-delay: 120ms;
-    }
-
-    @keyframes ghostFade{
-      0%   { opacity: 0.0; transform: translateX(12px); filter: blur(2px); }
-      25%  { opacity: 0.55; transform: translateX(0);   filter: blur(0); }
-      100% { opacity: 0.0; transform: translateX(-10px); filter: blur(2px); }
-    }
-
+ 
     /* main letters fly in + settle */
     .logo-intro-main{
       position: relative;
@@ -1017,10 +991,6 @@
   </script>
 
  <div id="logoIntroWrap" class="logo-intro-wrap" aria-hidden="true">
-  <!-- ghost word on the right -->
-  <div class="logo-intro-ghost">playse</div>
-
-  <!-- main animated text -->
   <div class="logo-intro-main">
     <span class="ch" style="--i:0; --dx:-120px; --dy:-18px; --r:-10deg;">p</span>
     <span class="ch" style="--i:1; --dx:90px;   --dy:12px;  --r:8deg;">l</span>
