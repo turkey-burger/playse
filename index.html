@@ -189,9 +189,9 @@
     @media (max-width: 520px) {
       .logo-intro-wrap {
         padding-top: calc(env(safe-area-inset-top) + var(--y-logo));
-        font-size: 40px;            /* match your mobile .logo rule */
-        letter-spacing: 0.4em;      /* match your mobile .logo rule */
-        line-height: 56px;
+        font-size: var(--logo-font-mobile);
+        line-height: var(--logo-line-mobile);
+        letter-spacing: var(--logo-track-mobile);
       }
     }
 
@@ -347,9 +347,11 @@
     .toast.show { opacity: 1; }
 
     /* Mobile */
-    @media (max-width: 520px) {
-  /* iPhone 15 Figma reference height ~852px */
+  @media (max-width: 520px) {
   :root {
+    --logo-font-mobile: 32px;
+    --logo-line-mobile: 56px;
+    --logo-track-mobile: .034em;
     --y-logo: 8.215vh;     /* 70 / 852 */
     --y-btn: 41.183vh;     /* 402 / 852 */
     --y-track: 53.0vh;   /* 478 / 852 */
@@ -397,9 +399,9 @@
   #state-landing .logo,
   #state-loading .logo,
   #state-player .logo {
-    font-size: 32px;
-    line-height: 56px;
-    letter-spacing: 0.4em; /* Figma 40% */
+    font-size: var(--logo-font-mobile);
+    line-height: var(--logo-line-mobile);
+    letter-spacing: var(--logo-track-mobile);
     white-space: nowrap;
   }
 
