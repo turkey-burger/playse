@@ -112,6 +112,54 @@
       text-transform: lowercase;
     }
 
+    
+    /* Logo intro animation (plays once, then reveals static logo) */
+    .logo {
+      position: relative;
+      display: inline-block;
+    }
+
+    .logo-static {
+      opacity: 0;               /* hidden until animation completes */
+      transition: opacity 180ms ease;
+    }
+
+    .logo-anim {
+      position: absolute;
+      inset: 0;
+      display: inline-flex;
+      align-items: baseline;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    .logo-anim > span {
+      display: inline-block;
+      opacity: 0;
+      transform: translateY(-6px) scale(0.98);
+      filter: blur(6px);
+      animation: logoIn 700ms cubic-bezier(.2,.9,.2,1) forwards;
+      animation-delay: calc(var(--i) * 70ms);
+    }
+
+    /* A little “settle” feel */
+    @keyframes logoIn {
+      0%   { opacity: 0; transform: translateY(-10px) scale(0.96); filter: blur(8px); }
+      60%  { opacity: 1; transform: translateY(2px)  scale(1.02); filter: blur(1px); }
+      100% { opacity: 1; transform: translateY(0)    scale(1);    filter: blur(0); }
+    }
+
+    /* When animation is done */
+    .logo.logo-done .logo-static { opacity: 1; }
+    .logo.logo-done .logo-anim   { display: none; }
+
+    /* Respect reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+      .logo-static { opacity: 1; }
+      .logo-anim { display: none; }
+      .logo-anim > span { animation: none; }
+    }
+
     .center {
       display: flex;
       flex-direction: column;
@@ -424,7 +472,19 @@
 <body class="noselect">
   <!-- LANDING -->
   <div id="state-landing" class="screen">
-    <div class="top"><div class="logo" aria-label="playse">playse</div></div>
+    <div class="top"><div class="logo" aria-label="playse">
+                     <span class="logo-static">playse</span>
+
+                     <!-- one-time intro animation -->
+                     <span class="logo-anim" aria-hidden="true">
+                        <span style="--i:0">p</span>
+                        <span style="--i:1">l</span>
+                        <span style="--i:2">a</span>
+                        <span style="--i:3">y</span>
+                        <span style="--i:4">s</span>
+                        <span style="--i:5">e</span>
+                     </span>
+</div></div>
     <div class="center">
       <button class="icon-btn" id="playBtn" aria-label="Play">
         <picture>
@@ -438,7 +498,18 @@
 
   <!-- LOADING -->
   <div id="state-loading" class="screen hidden">
-    <div class="top"><div class="logo" aria-label="playse">playse</div></div>
+    <div class="top"><div class="logo" aria-label="playse">
+                     <span class="logo-static">playse</span>
+
+                     <!-- one-time intro animation -->
+                     <span class="logo-anim" aria-hidden="true">
+                        <span style="--i:0">p</span>
+                        <span style="--i:1">l</span>
+                        <span style="--i:2">a</span>
+                        <span style="--i:3">y</span>
+                        <span style="--i:4">s</span>
+                        <span style="--i:5">e</span>
+                     </span></div>
     <div class="center" aria-label="Loading">
       <div class="dots" aria-hidden="true">
         <div class="dot"></div>
@@ -451,7 +522,18 @@
 
   <!-- PLAYER -->
   <div id="state-player" class="screen hidden">
-    <div class="top"><div class="logo" aria-label="playse">playse</div></div>
+    <div class="top"><div class="logo" aria-label="playse">
+                     <span class="logo-static">playse</span>
+
+                     <!-- one-time intro animation -->
+                     <span class="logo-anim" aria-hidden="true">
+                        <span style="--i:0">p</span>
+                        <span style="--i:1">l</span>
+                        <span style="--i:2">a</span>
+                        <span style="--i:3">y</span>
+                        <span style="--i:4">s</span>
+                        <span style="--i:5">e</span>
+                     </span></div>
 
     <div class="center">
       <button class="icon-btn" id="toggleBtn" aria-label="Pause">
@@ -500,6 +582,11 @@
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const AUDIO_BASE = 'https://pub-711bcf5604184f5580b7ad5cf4df3511.r2.dev';
+      // Play logo intro animation once per page load, then show the normal static logo
+      const logos = document.querySelectorAll('.logo');
+      setTimeout(() => {
+        logos.forEach(l => l.classList.add('logo-done'));
+      }, 900); // should be a bit longer than the last letter delay + animation
       const sections = [
         { audio: `${AUDIO_BASE}/playse_1.mp3`, tracklist: 'playse_1_tracklist.csv' },
         { audio: `${AUDIO_BASE}/playse_2.mp3`, tracklist: 'playse_2_tracklist.csv' },
@@ -528,7 +615,7 @@
         { audio: `${AUDIO_BASE}/playse_25.mp3`, tracklist: 'playse_25_tracklist.csv' },
         { audio: `${AUDIO_BASE}/playse_26.mp3`, tracklist: 'playse_26_tracklist.csv' },
         { audio: `${AUDIO_BASE}/playse_27.mp3`, tracklist: 'playse_27_tracklist.csv' },
-        
+      
       ];
 
       const NOT_AVAILABLE_MSG = "Sorry, this song isn't available on the selected streaming service";
