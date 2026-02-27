@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>playse</title>
 
   <link rel="icon" href="favicon.ico">
@@ -74,6 +74,18 @@
     * { box-sizing: border-box; }
     html, body { height: 100%; }
 
+    /* Always cover the visible screen on iOS Safari */
+    html, body {
+      background: transparent;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+    }  
+
     html {
       height: -webkit-fill-available; /* iOS Safari */
       background: linear-gradient(180deg, var(--bg-top) 0%, var(--bg-mid) 55%, var(--bg-bot) 100%);
@@ -89,7 +101,7 @@
 
       /* keep gradient here too (belt + suspenders) */
       background: linear-gradient(180deg, var(--bg-top) 0%, var(--bg-mid) 55%, var(--bg-bot) 100%);
-      overflow: hidden;
+      /*overflow: hidden; */
     }
 
     .noselect {
