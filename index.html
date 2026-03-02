@@ -91,30 +91,21 @@
       margin: 0;
       padding: 0;
       height: 100%;
-      min-height: 100svh; /* stable on iOS */
-      background: transparent;              /* IMPORTANT */
-      background-color: transparent;      /* fallback */
+      min-height: 100svh;
+      background: linear-gradient(180deg, var(--bg-top) 0%, var(--bg-mid) 55%, var(--bg-bot) 100%);
+      background-color: var(--bg-bot);
     }
 
     /* iOS Safari fallback */
     html {
       height: -webkit-fill-available;
     }
+
     body {
       min-height: -webkit-fill-available;
       color: var(--fg);
       font-family: "ABCDiatypeMono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
       font-weight: 300;
-      background: transparent;
-
-    body::before {
-      content: "";
-      position: fixed;
-      inset: 0;
-      z-index: -1;
-      background: linear-gradient(180deg, var(--bg-top) 0%, var(--bg-mid) 55%, var(--bg-bot) 100%);
-      transform: translateZ(0);
-    }
 
     }
 
@@ -125,7 +116,7 @@
     }
 
     .screen {
-      height: 100svh; /* key: prevents real scroll, still allows rubber-band */
+      height: 100svh;
       width: 100vw;
       display: grid;
       grid-template-rows: auto 1fr auto;
