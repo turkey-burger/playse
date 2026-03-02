@@ -81,39 +81,29 @@
     }
 
     * { box-sizing: border-box; }
-    html, body { height: 100%; }
 
-    /* Always cover the visible screen on iOS Safari */
+    /* One authoritative background that also paints iOS safe-areas */
     html, body {
       margin: 0;
       padding: 0;
       height: 100%;
-      background: linear-gradient(to bottom, #9aa1a8, #5f6c76);
-    }
-
-    body::before {
-      content: "";
-      position: fixed;
-      inset: 0;
-      z-index: -1;
-    }  
-
-    html {
-      height: -webkit-fill-available; /* iOS Safari */
+      min-height: 100svh; /* stable on iOS */
       background: linear-gradient(180deg, var(--bg-top) 0%, var(--bg-mid) 55%, var(--bg-bot) 100%);
+      background-color: var(--bg-bot); /* prevents any white flash/gaps */
     }
 
+    /* iOS Safari fallback */
+    html {
+      height: -webkit-fill-available;
+    }
     body {
-      margin: 0;
-      min-height: 100vh;
-      min-height: -webkit-fill-available; /* iOS Safari */
+      min-height: -webkit-fill-available;
       color: var(--fg);
       font-family: "ABCDiatypeMono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
       font-weight: 300;
 
-      /* keep gradient here too (belt + suspenders) */
-      background: linear-gradient(180deg, var(--bg-top) 0%, var(--bg-mid) 55%, var(--bg-bot) 100%);
-      /*overflow: hidden; */
+      /* helps prevent rubber-band revealing white on some iOS versions */
+      overscroll-behavior-y: none;
     }
 
     .noselect {
@@ -129,6 +119,7 @@
       display: grid;
       grid-template-rows: auto 1fr auto;
       padding: var(--pad-desktop);
+      padding-bottom: calc(var(--pad-desktop) + env(safe-area-inset-bottom));
     }
 
     /* Default fallback */
@@ -431,6 +422,7 @@
   #state-loading,
   #state-player {
     padding: 0;
+    padding-bottom: env(safe-area-inset-bottom);
     position: relative;
     min-height: 100vh;
     min-height: -webkit-fill-available;
