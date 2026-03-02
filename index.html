@@ -731,6 +731,40 @@
       let isProgrammaticSeek = false;
       let isSwitchingSection = false;
 
+      // ===== analytics (simple) =====
+      function sendStat(payload) {
+        fetch("/analytics", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+          keepalive: true, // helps on tab close (supported in modern browsers)
+        }).catch(() => {});
+      }
+
+      function currentTrackKey() {
+        const t = tracks?.[currentTrackIndex];
+        const section = currentSectionIndex + 1;
+        const start = t?.start ?? "";
+        const title = (t?.title ?? "").trim();
+        const artist = (t?.artist ?? "").trim();
+        return `${section}:${start}:${title}—${artist}`;
+      }
+
+      let heartbeatTimer = null;
+
+      function startHeartbeat() {
+        stopHeartbeat();
+        heartbeatTimer = setInterval(() => {
+          sendStat({ type: "listen", trackKey: currentTrackKey(), seconds: 30 });
+        }, 30000);
+      }
+
+      function stopHeartbeat() {
+        if (heartbeatTimer) clearInterval(heartbeatTimer);
+        heartbeatTimer = null;
+      }
+      // ===== /analytics =====
+
       function showLanding() {
         landing.classList.remove('hidden');
         loading.classList.add('hidden');
@@ -778,7 +812,19 @@
           }
         });
       }
+      
+      spotifyLink.addEventListener("click", () => {
+        const href = spotifyLink.getAttribute("href");
+        if (!href || href === "#") return;
+        sendStat({ type: "add", trackKey: currentTrackKey() });
+      });
 
+      appleLink.addEventListener("click", () => {
+        const href = appleLink.getAttribute("href");
+        if (!href || href === "#") return;
+        sendStat({ type: "add", trackKey: currentTrackKey() });
+      });
+      
       attachUnavailableHandler(spotifyLink);
       attachUnavailableHandler(appleLink);
 
@@ -990,10 +1036,13 @@
       audio.addEventListener('play', () => {
         setPausedUI(false);
         showPlayer();
+        sendStat({ type: "play", trackKey: currentTrackKey() });
+        startHeartbeat();
       });
 
       audio.addEventListener('pause', () => {
         setPausedUI(true);
+        stopHeartbeat();
       });
 
       audio.addEventListener('timeupdate', () => {
@@ -1008,11 +1057,14 @@
         const idx = findTrackIndex(audio.currentTime);
         if (idx !== currentTrackIndex && idx >= 0) {
           currentTrackIndex = idx;
+          // New track started (approx). Count as a play.
+          sendStat({ type: "play", trackKey: currentTrackKey() });
           updateTrackUI(tracks[idx]);
         }
       });
 
       audio.addEventListener('ended', async () => {
+        stopHeartbeat();
         try {
           const next = (currentSectionIndex + 1) % sections.length;
           await setSection(next, { startAtSeconds: 0, autoplay: true });
