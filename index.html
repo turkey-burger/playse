@@ -3,6 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  
+  <!-- Enable standalone (PWA) mode -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+
+  <!-- Make status bar overlay the page -->
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <!-- Theme color for browsers -->
+  <meta name="theme-color" content="#8c949c">
   <title>playse</title>
 
   <link rel="icon" href="favicon.ico">
@@ -76,7 +85,10 @@
 
     /* Always cover the visible screen on iOS Safari */
     html, body {
-      background: transparent;
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: linear-gradient(to bottom, #9aa1a8, #5f6c76);
     }
 
     body::before {
@@ -117,11 +129,6 @@
       display: grid;
       grid-template-rows: auto 1fr auto;
       padding: var(--pad-desktop);
-    }
-
-    /* iOS Safari viewport fix: extend behind the bottom bar */
-    html, body {
-      height: 100%;
     }
 
     /* Default fallback */
